@@ -86,7 +86,21 @@ export function loadLive2DScripts() {
   
     function setupModelInteraction(model) {
       if (!model) return;
-      document.addEventListener('mousemove', e => {
+      
+      // 添加节流函数来限制事件触发频率
+      function throttle(callback, delay) {
+        let lastCall = 0;
+        return function(...args) {
+          const now = Date.now();
+          if (now - lastCall >= delay) {
+            lastCall = now;
+            callback.apply(this, args);
+          }
+        };
+      }
+      
+      // 使用节流函数包装鼠标移动处理函数
+      const handleMouseMove = throttle((e) => {
         if (!model?.internalModel?.parameters?.ids) return;
         const mouseX = (e.clientX / window.innerWidth) * 2 - 1;
         const mouseY = (e.clientY / window.innerHeight) * 2 - 1;
@@ -100,7 +114,9 @@ export function loadLive2DScripts() {
         } catch (e) {
           console.log('参数控制出错:', e);
         }
-      });
+      }, 100); // 100毫秒的节流时间，可以根据需要调整
+      
+      document.addEventListener('mousemove', handleMouseMove);
     }
   }
   

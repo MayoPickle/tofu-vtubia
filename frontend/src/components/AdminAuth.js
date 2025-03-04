@@ -133,6 +133,7 @@ function AdminAuth() {
               danger 
               icon={<LogoutOutlined />}
               onClick={handleLogout}
+              style={{ backgroundColor: '#7928CA', borderColor: '#7928CA' }}
             >
               退出
             </Button>
@@ -194,14 +195,14 @@ function AdminAuth() {
       if (isAdmin) {
         items.push({
           key: 'admin',
-          label: <Link to="/admin/users">用户管理</Link>,
+          label: <Link to="/admin/users" style={{ color: 'var(--accent-color)' }}>用户管理</Link>,
         });
       }
       
       items.push({
         key: 'logout',
         label: (
-          <a onClick={handleLogout}>
+          <a onClick={handleLogout} style={{ color: '#7928CA', fontWeight: 'bold' }}>
             退出登录
           </a>
         ),
@@ -225,11 +226,29 @@ function AdminAuth() {
     // 未登录状态
     return (
       <div style={{ color: '#fff' }}>
-        <a style={{ color: '#fff' }} onClick={() => setShowLoginModal(true)}>
+        <a 
+          style={{ 
+            color: '#fff',
+            transition: 'opacity 0.3s'
+          }} 
+          onClick={() => setShowLoginModal(true)}
+          className="header-link"
+          onMouseEnter={(e) => e.target.style.opacity = '0.8'}
+          onMouseLeave={(e) => e.target.style.opacity = '1'}
+        >
           登录
         </a>
-        <Divider type="vertical" style={{ backgroundColor: '#666' }} />
-        <a style={{ color: '#fff' }} onClick={openRegisterModal}>
+        <Divider type="vertical" style={{ backgroundColor: '#fff' }} />
+        <a 
+          style={{ 
+            color: '#fff',
+            transition: 'opacity 0.3s'
+          }} 
+          onClick={openRegisterModal}
+          className="header-link"
+          onMouseEnter={(e) => e.target.style.opacity = '0.8'}
+          onMouseLeave={(e) => e.target.style.opacity = '1'}
+        >
           注册
         </a>
       </div>

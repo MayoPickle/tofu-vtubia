@@ -14,7 +14,7 @@
 }
 
 .App-header {
-  background-color: #282c34;
+  background-color: #ff85a2;
   min-height: 100vh;
   display: flex;
   flex-direction: column;
@@ -25,7 +25,14 @@
 }
 
 .App-link {
-  color: #61dafb;
+  color: #ff5c8d;
+  font-weight: 500;
+  transition: all 0.3s;
+}
+
+.App-link:hover {
+  color: #ff85a2;
+  text-decoration: none;
 }
 
 @keyframes App-logo-spin {
@@ -35,4 +42,50 @@
   to {
     transform: rotate(360deg);
   }
+}
+
+/* 可爱风格按钮悬浮效果 */
+.ant-btn:hover {
+  transform: translateY(-2px);
+  transition: all 0.3s ease;
+}
+
+/* 卡片悬浮效果 */
+.ant-card {
+  transition: all 0.3s ease;
+}
+
+.ant-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 20px rgba(255, 92, 141, 0.25) !important;
+}
+
+/* 标题样式 */
+h1, h2, h3, h4, h5 {
+  color: #ff5c8d;
+}
+
+/* 表格行悬浮效果 */
+.ant-table-tbody > tr:hover > td {
+  background-color: #ffeef2 !important;
+}
+
+/* 表单元素样式 */
+.ant-input:focus, .ant-input-focused {
+  border-color: #ff85a2;
+  box-shadow: 0 0 0 2px rgba(255, 92, 141, 0.2);
+}
+
+.ant-select-focused .ant-select-selector {
+  border-color: #ff85a2 !important;
+  box-shadow: 0 0 0 2px rgba(255, 92, 141, 0.2) !important;
+}
+
+/* 分页组件样式 */
+.ant-pagination-item-active {
+  border-color: #ff85a2 !important;
+}
+
+.ant-pagination-item-active a {
+  color: #ff85a2 !important;
 }

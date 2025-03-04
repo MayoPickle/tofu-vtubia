@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Routes, Route, Link, Navigate, useLocation } from 'react-router-dom';
 import { Layout, Menu, Drawer, Button } from 'antd';
-import { MenuOutlined } from '@ant-design/icons';
+import { MenuOutlined, HeartOutlined, CustomerServiceOutlined, GiftOutlined, RocketOutlined } from '@ant-design/icons';
 import Intro from './components/Intro';
 import axios from 'axios';
 import SongList from './components/SongList';
@@ -10,6 +10,7 @@ import AdminUserList from './components/AdminUserList';
 import Observatory from './components/Observatory';
 import LotteryWheel from './components/LotteryWheel';
 import Live2DModel from './components/Live2DModel';
+import CherryBlossom from './components/CherryBlossom';
 import { useDeviceDetect } from './utils/deviceDetector';
 import MobileNavGesture from './components/MobileNavGesture';
 
@@ -54,18 +55,35 @@ function App() {
   };
 
   const menuItems = [
-    ...(showIntro ? [{ key: 'intro', label: <Link to="/intro">介绍</Link> }] : []),
-    { key: 'songs', label: <Link to="/songs">音乐小馆</Link> },
-    { key: 'lottery', label: <Link to="/lottery">抽奖</Link> },
-    { key: 'observatory', label: <Link to="/observatory">观测站</Link> }
+    ...(showIntro ? [{ key: 'intro', label: <Link to="/intro">介绍</Link>, icon: <HeartOutlined /> }] : []),
+    { key: 'songs', label: <Link to="/songs">音乐小馆</Link>, icon: <CustomerServiceOutlined /> },
+    { key: 'lottery', label: <Link to="/lottery">抽奖</Link>, icon: <GiftOutlined /> },
+    { key: 'observatory', label: <Link to="/observatory">观测站</Link>, icon: <RocketOutlined /> }
   ];
   
   // 移动端布局
   if (isMobile) {
     return (
       <Layout style={{ minHeight: '100vh' }}>
-        <Header style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 16px' }}>
-          <div style={{ color: '#fff', fontSize: '16px', fontWeight: 'bold' }}>9872星球</div>
+        <CherryBlossom />
+        <Header style={{ 
+          display: 'flex', 
+          alignItems: 'center', 
+          justifyContent: 'space-between', 
+          padding: '0 16px',
+          borderRadius: '0 0 16px 16px',
+          boxShadow: '0 2px 8px rgba(255, 133, 162, 0.3)'
+        }}>
+          <div style={{ 
+            color: '#fff', 
+            fontSize: '18px', 
+            fontWeight: 'bold',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px'
+          }}>
+            <HeartOutlined /> 9872星球
+          </div>
           
           <Button
             type="text"
@@ -75,24 +93,30 @@ function App() {
         </Header>
 
         <Drawer
-          title="9872星球"
+          title={<div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><HeartOutlined /> 9872星球</div>}
           placement="right"
           onClose={() => setDrawerVisible(false)}
           open={drawerVisible}
           bodyStyle={{ padding: 0 }}
+          headerStyle={{ fontSize: '18px', fontWeight: 'bold' }}
         >
           <Menu 
             mode="vertical" 
             selectedKeys={[getSelectedMenuKey()]}
             onClick={() => setDrawerVisible(false)}
             items={menuItems}
+            style={{ borderRadius: '12px', margin: '8px' }}
           />
           <div style={{ padding: '16px' }}>
             <AdminAuth />
           </div>
         </Drawer>
 
-        <Content style={{ padding: '16px', marginBottom: '56px' }} className="mobile-content">
+        <Content style={{ 
+          padding: '16px', 
+          marginBottom: '56px',
+          marginTop: '16px'
+        }} className="mobile-content">
           <Routes>
             <Route path="/intro" element={<Intro />} />
             <Route path="/songs" element={<SongList />} />
@@ -109,15 +133,16 @@ function App() {
 
         <Footer style={{ 
           textAlign: 'center', 
-          background: '#001529', 
           color: '#fff',
           position: 'fixed',
           bottom: 0,
           width: '100%',
           padding: '10px 0',
-          zIndex: 1000
+          zIndex: 1000,
+          borderRadius: '16px 16px 0 0',
+          boxShadow: '0 -2px 8px rgba(255, 133, 162, 0.3)'
         }}>
-          © 2025 豆腐观测站
+          © 2025 豆腐观测站 <HeartOutlined />
         </Footer>
         
         {/* ✅ Live2D 模型 */}
@@ -129,10 +154,26 @@ function App() {
   // PC端布局 (保留原来的布局)
   return (
     <Layout style={{ minHeight: '100vh' }}>
-      <Header style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <CherryBlossom />
+      <Header style={{ 
+        display: 'flex', 
+        alignItems: 'center', 
+        justifyContent: 'space-between',
+        borderRadius: '0 0 16px 16px',
+        boxShadow: '0 2px 8px rgba(255, 133, 162, 0.3)'
+      }}>
         {/* ✅ 左侧：标题 + 菜单 */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-          <div style={{ color: '#fff', fontSize: '18px', fontWeight: 'bold' }}>9872星球</div>
+          <div style={{ 
+            color: '#fff', 
+            fontSize: '20px', 
+            fontWeight: 'bold',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px'
+          }}>
+            <HeartOutlined /> 9872星球
+          </div>
 
           {/* ✅ 动态更新选中项 */}
           <Menu theme="dark" mode="horizontal" selectedKeys={[getSelectedMenuKey()]} items={menuItems} />
@@ -142,7 +183,10 @@ function App() {
         <AdminAuth />
       </Header>
 
-      <Content>
+      <Content style={{ 
+        padding: '24px',
+        marginTop: '16px'
+      }}>
         <Routes>
           <Route path="/intro" element={<Intro />} />
           <Route path="/songs" element={<SongList />} />
@@ -156,8 +200,14 @@ function App() {
       </Content>
 
       {/* 全局 Footer */}
-      <Footer style={{ textAlign: 'center', background: '#001529', color: '#fff' }}>
-        © 2025 豆腐观测站
+      <Footer style={{ 
+        textAlign: 'center', 
+        color: '#fff',
+        borderRadius: '16px 16px 0 0',
+        boxShadow: '0 -2px 8px rgba(255, 133, 162, 0.3)',
+        marginTop: '16px'
+      }}>
+        © 2025 豆腐观测站 <HeartOutlined />
       </Footer>
       
       {/* ✅ Live2D 模型 */}

@@ -5,11 +5,173 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  background-color: #fff6f9;
 }
 
 code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
+}
+
+/* 可爱风格主题定义 */
+:root {
+  --primary-color: #ff85a2;
+  --secondary-color: #ffc2d1;
+  --accent-color: #ff5c8d;
+  --light-color: #ffeef2;
+  --border-radius: 12px;
+  --box-shadow: 0 4px 10px rgba(255, 133, 162, 0.2);
+}
+
+/* 链接样式 */
+a {
+  color: var(--accent-color);
+  transition: color 0.3s;
+}
+
+a:hover {
+  color: var(--primary-color);
+  text-decoration: none;
+}
+
+/* Ant Design链接样式 */
+.ant-typography a,
+.ant-menu a,
+.ant-dropdown a,
+.ant-btn-link {
+  color: var(--accent-color);
+}
+
+.ant-typography a:hover,
+.ant-menu a:hover,
+.ant-dropdown a:hover,
+.ant-btn-link:hover {
+  color: var(--primary-color);
+}
+
+/* 保持导航菜单中的链接为白色 */
+.ant-menu-dark .ant-menu-item a,
+.ant-menu-dark .ant-menu-item-selected a,
+.header-link {
+  color: white !important;
+}
+
+.ant-menu-dark .ant-menu-item:hover a {
+  color: white !important;
+}
+
+/* 头部导航链接悬停效果 */
+.header-link:hover {
+  opacity: 0.8;
+  color: white !important;
+}
+
+/* 全局样式覆盖 */
+/* 按钮 */
+.ant-btn-primary {
+  background-color: var(--primary-color);
+  border-color: var(--primary-color);
+}
+
+.ant-btn-primary:hover,
+.ant-btn-primary:focus {
+  background-color: var(--accent-color);
+  border-color: var(--accent-color);
+}
+
+/* 危险按钮样式 */
+.ant-btn-dangerous {
+  background-color: #7928CA !important;
+  border-color: #7928CA !important;
+  color: white !important;
+}
+
+.ant-btn-dangerous:hover {
+  background-color: #9153d8 !important;
+  border-color: #9153d8 !important;
+}
+
+/* 下拉菜单中的危险项样式 */
+.ant-dropdown-menu-item-danger {
+  color: #7928CA !important;
+  font-weight: bold;
+}
+
+.ant-dropdown-menu-item-danger:hover {
+  background-color: rgba(121, 40, 202, 0.1) !important;
+}
+
+/* 导航菜单 */
+.ant-menu-dark {
+  background-color: var(--primary-color);
+}
+
+/* 导航菜单选中项样式 */
+.ant-menu-dark .ant-menu-item-selected {
+  background-color: var(--accent-color) !important;
+}
+
+.ant-menu-dark .ant-menu-item-active {
+  background-color: var(--accent-color) !important;
+}
+
+/* 修改导航菜单中的指示线颜色 */
+.ant-menu-horizontal > .ant-menu-item-selected::after,
+.ant-menu-horizontal > .ant-menu-submenu-selected::after {
+  border-bottom-color: #fff !important;
+}
+
+.ant-layout-header {
+  background-color: var(--primary-color);
+}
+
+.ant-layout-footer {
+  background-color: var(--primary-color);
+  color: white;
+}
+
+/* 卡片组件 */
+.ant-card {
+  border-radius: var(--border-radius);
+  box-shadow: var(--box-shadow);
+  border: 1px solid var(--secondary-color);
+}
+
+.ant-card-head {
+  background-color: var(--light-color);
+  border-bottom: 1px solid var(--secondary-color);
+  border-radius: var(--border-radius) var(--border-radius) 0 0;
+}
+
+/* 表格 */
+.ant-table {
+  border-radius: var(--border-radius);
+  overflow: hidden;
+}
+
+.ant-table-thead > tr > th {
+  background-color: var(--light-color);
+}
+
+/* 抽屉组件 */
+.ant-drawer-header {
+  background-color: var(--light-color);
+}
+
+.ant-drawer-title {
+  color: var(--accent-color);
+  font-weight: bold;
+}
+
+/* 移动端抽屉中的垂直菜单选中项样式 */
+.ant-drawer .ant-menu-vertical .ant-menu-item-selected {
+  background-color: var(--light-color) !important;
+  color: var(--accent-color) !important;
+  border-left: 3px solid var(--accent-color);
+}
+
+.ant-drawer .ant-menu-vertical .ant-menu-item-selected a {
+  color: var(--accent-color) !important;
 }
 
 /* 响应式布局 */
@@ -23,15 +185,18 @@ code {
     font-size: 12px;
     padding: 0 8px;
     height: 28px;
+    border-radius: 8px;
   }
   
   .ant-input {
     font-size: 14px;
+    border-radius: 8px;
   }
   
   .ant-modal {
     max-width: 90%;
     margin: 0 auto;
+    border-radius: var(--border-radius);
   }
   
   .ant-card-head-title {
@@ -82,6 +247,13 @@ code {
 /* 适配暗黑模式 */
 @media (prefers-color-scheme: dark) {
   body {
-    background-color: #121212;
+    background-color: #382030;
+  }
+  
+  :root {
+    --primary-color: #ff5c8d;
+    --secondary-color: #ff3372;
+    --accent-color: #ff85a2;
+    --light-color: #412a36;
   }
 }
