@@ -108,7 +108,10 @@ function SongList() {
     editForm.setFieldsValue({
       title: record.title,
       artist: record.artist,
+      album: record.album,
+      genre: record.genre,
       year: record.year,
+      meta_data: record.meta_data,
       link: record.link,
       description: record.description
     });
@@ -178,10 +181,28 @@ function SongList() {
       key: 'artist'
     },
     {
-      title: '年代',
+      title: '专辑',
+      dataIndex: 'album',
+      key: 'album',
+      responsive: ['lg']
+    },
+    {
+      title: '风格',
+      dataIndex: 'genre',
+      key: 'genre',
+      responsive: ['lg']
+    },
+    {
+      title: '年份',
       dataIndex: 'year',
       key: 'year',
-      responsive: ['md']
+      width: 80
+    },
+    {
+      title: 'Meta',
+      dataIndex: 'meta_data',
+      key: 'meta_data',
+      responsive: ['xl']
     },
     {
       title: '描述',
@@ -228,8 +249,17 @@ function SongList() {
         <Form.Item name="artist" label="艺术家" rules={[{ required: true, message: '请输入艺术家' }]}>
           <Input placeholder="输入艺术家" />
         </Form.Item>
-        <Form.Item name="year" label="年代">
-          <Input placeholder="输入年代（如：2021）" />
+        <Form.Item name="album" label="专辑">
+          <Input placeholder="输入专辑" />
+        </Form.Item>
+        <Form.Item name="genre" label="风格">
+          <Input placeholder="输入风格" />
+        </Form.Item>
+        <Form.Item name="year" label="年份">
+          <Input type="number" placeholder="输入年份（如：2021）" />
+        </Form.Item>
+        <Form.Item name="meta_data" label="Meta">
+          <Input placeholder="输入Meta数据" />
         </Form.Item>
         <Form.Item name="link" label="链接">
           <Input placeholder="输入音乐链接" />
@@ -289,7 +319,10 @@ function SongList() {
                 description={
                   <div>
                     <div><Text strong>艺术家:</Text> {item.artist}</div>
-                    {item.year && <div><Text strong>年代:</Text> {item.year}</div>}
+                    {item.album && <div><Text strong>专辑:</Text> {item.album}</div>}
+                    {item.genre && <div><Text strong>风格:</Text> {item.genre}</div>}
+                    {item.year && <div><Text strong>年份:</Text> {item.year}</div>}
+                    {item.meta_data && <div><Text strong>Meta:</Text> {item.meta_data}</div>}
                     {item.description && <div><Text strong>描述:</Text> {item.description}</div>}
                   </div>
                 }
@@ -307,7 +340,7 @@ function SongList() {
       <div style={{ padding: '24px' }}>
         <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between' }}>
           <Input.Search 
-            placeholder="搜索歌曲" 
+            placeholder="搜索歌曲或歌手..." 
             allowClear 
             onSearch={onSearch} 
             style={{ width: 300 }} 
