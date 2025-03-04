@@ -47,15 +47,14 @@ function Intro() {
           fontWeight: 'bold',
           marginBottom: '20px'
         }}>
-          欢迎来到充满音乐和欢乐的粉色星球！
+          欢迎来到9872星球，荒凉，寂寞，但充满希望✨
         </Paragraph>
         
         <Paragraph style={{ fontSize: isMobile ? '14px' : '16px' }}>
-          欢迎来到 9872星球，这里流传着许多神秘而有趣的传说。据说这里的居民
-          喜欢用音乐和故事来表达情感。每到黄昏时分，天空会闪耀七彩流光……
+          在这个神奇的星球上，住着一群热爱音乐和故事的小精灵。每当夜幕降临，他们就会聚集在一起，用美妙的歌声和有趣的故事点亮整个星空。🌙
         </Paragraph>
         <Paragraph style={{ fontSize: isMobile ? '14px' : '16px' }}>
-          （TODO：此处要写点什么）
+          这里的天空总是变幻莫测，有时是温柔的粉色，有时是梦幻的紫色，有时还会出现彩虹般的极光。在这里，每一天都是新的冒险，每一刻都充满惊喜！🌈
         </Paragraph>
       </Card>
 
@@ -83,7 +82,7 @@ function Intro() {
             }}
           >
             <Paragraph style={{ fontSize: isMobile ? '14px' : '16px' }}>
-              9872星球是一个分享音乐和故事的平台，我们致力于为大家提供一个自由表达的空间。
+              我们在乎每一位路过或者选择留在星球上的开拓者呢！✨ 这里的故事像星星一样闪闪发光，像彩虹一样绚丽多彩，让我们一起创造属于我们的美好回忆吧！💫
             </Paragraph>
           </Card>
         </Col>
@@ -110,7 +109,7 @@ function Intro() {
             }}
           >
             <Paragraph style={{ fontSize: isMobile ? '14px' : '16px' }}>
-              如果你也热爱音乐和故事，欢迎加入我们的星球大家庭！
+              请在BiliBili关注<a href="https://space.bilibili.com/3546719987960278" target="_blank" rel="noopener noreferrer" style={{ color: '#ff85a2' }}>万能小兔旅店</a>，加入大家庭，和我们一起建设9872星球吧！✨
             </Paragraph>
           </Card>
         </Col>
