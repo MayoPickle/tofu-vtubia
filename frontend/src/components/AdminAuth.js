@@ -302,6 +302,9 @@ function AdminAuth() {
         cancelText="取消"
         maskClosable={false}
       >
+        <Typography.Text type="secondary" style={{ display: 'block', marginBottom: 16 }}>
+          您的密码将使用哈希加密存储，维护者也无法查看密码。
+        </Typography.Text>
         <Form form={registerForm} layout="vertical">
           <Form.Item
             name="username"
@@ -312,7 +315,7 @@ function AdminAuth() {
               { max: 20, message: '用户名最多20个字符' },
             ]}
           >
-            <Input />
+            <Input placeholder="请输入用户名" />
           </Form.Item>
 
           <Form.Item
@@ -323,7 +326,7 @@ function AdminAuth() {
               { min: 6, message: '密码至少6个字符' },
             ]}
           >
-            <Input.Password />
+            <Input.Password placeholder="请输入密码" />
           </Form.Item>
 
           <Form.Item
@@ -342,7 +345,7 @@ function AdminAuth() {
               }),
             ]}
           >
-            <Input.Password />
+            <Input.Password placeholder="请再次输入密码" />
           </Form.Item>
           
           <Form.Item
