@@ -36,7 +36,7 @@ function Intro() {
           color: '#ff5c8d'
         }}>
           <HeartOutlined style={{ marginRight: '8px' }} />
-          9872星球的故事
+          9672星球的故事
           <HeartOutlined style={{ marginLeft: '8px' }} />
         </Title>
         
@@ -47,7 +47,7 @@ function Intro() {
           fontWeight: 'bold',
           marginBottom: '20px'
         }}>
-          欢迎来到9872星球，荒凉，寂寞，但充满希望✨
+          欢迎来到9672星球，荒凉，寂寞，但充满希望✨
         </Paragraph>
         
         <Paragraph style={{ fontSize: isMobile ? '14px' : '16px' }}>
@@ -109,7 +109,7 @@ function Intro() {
             }}
           >
             <Paragraph style={{ fontSize: isMobile ? '14px' : '16px' }}>
-              请在BiliBili关注<a href="https://space.bilibili.com/3546719987960278" target="_blank" rel="noopener noreferrer" style={{ color: '#ff85a2' }}>万能小兔旅店</a>，加入大家庭，和我们一起建设9872星球吧！✨
+              请在BiliBili关注<a href="https://space.bilibili.com/3546719987960278" target="_blank" rel="noopener noreferrer" style={{ color: '#ff85a2' }}>万能小兔旅店</a>，加入大家庭，和我们一起建设9672星球吧！✨
             </Paragraph>
           </Card>
         </Col>

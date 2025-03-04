@@ -1,11 +1,13 @@
 // SpinWheel.jsx
 import React, { useState, useEffect, useRef } from 'react';
 import { Button, message } from 'antd';
+import { useDeviceDetect } from '../../utils/deviceDetector';
 
 function SpinWheel({ prizes, result, setResult }) {
   const canvasRef = useRef(null);
   const isSpinningRef = useRef(false);
   const animationIdRef = useRef(null);
+  const { isMobile } = useDeviceDetect();
 
   // 当前转盘角度
   const [rotationAngle, setRotationAngle] = useState(0);
@@ -189,15 +191,34 @@ function SpinWheel({ prizes, result, setResult }) {
   // 3) 渲染
   // ===========================
   return (
-    <div>
-      <Button type="primary" onClick={handleSpin} style={{ marginBottom: 10 }}>
+    <div style={{ 
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      width: '100%'
+    }}>
+      <Button 
+        type="primary" 
+        onClick={handleSpin} 
+        style={{ 
+          marginBottom: isMobile ? 16 : 20,
+          width: isMobile ? '100%' : 'auto',
+          height: isMobile ? '40px' : '32px',
+          fontSize: isMobile ? '16px' : '14px'
+        }}
+      >
         开始抽奖
       </Button>
       <canvas
         ref={canvasRef}
         width={400}
         height={400}
-        style={{ border: '1px dashed #ccc', borderRadius: '50%' }}
+        style={{ 
+          border: '1px dashed #ccc', 
+          borderRadius: '50%',
+          maxWidth: '100%',
+          height: 'auto'
+        }}
       />
     </div>
   );

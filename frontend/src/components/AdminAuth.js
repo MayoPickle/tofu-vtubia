@@ -133,7 +133,6 @@ function AdminAuth() {
               danger 
               icon={<LogoutOutlined />}
               onClick={handleLogout}
-              style={{ backgroundColor: '#7928CA', borderColor: '#7928CA' }}
             >
               退出
             </Button>
@@ -202,7 +201,7 @@ function AdminAuth() {
       items.push({
         key: 'logout',
         label: (
-          <a onClick={handleLogout} style={{ color: '#7928CA', fontWeight: 'bold' }}>
+          <a onClick={handleLogout} style={{ color: 'var(--accent-color)', fontWeight: 'bold' }}>
             退出登录
           </a>
         ),

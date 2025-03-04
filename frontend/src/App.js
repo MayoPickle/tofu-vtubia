@@ -82,7 +82,7 @@ function App() {
             alignItems: 'center',
             gap: '8px'
           }}>
-            <HeartOutlined /> 9872星球
+            <HeartOutlined /> 9672星球
           </div>
           
           <Button
@@ -93,7 +93,7 @@ function App() {
         </Header>
 
         <Drawer
-          title={<div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><HeartOutlined /> 9872星球</div>}
+          title={<div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><HeartOutlined /> 9672星球</div>}
           placement="right"
           onClose={() => setDrawerVisible(false)}
           open={drawerVisible}
@@ -174,7 +174,7 @@ function App() {
             alignItems: 'center',
             gap: '8px'
           }}>
-            <HeartOutlined /> 9872星球
+            <HeartOutlined /> 9672星球
           </div>
 
           {/* ✅ 动态更新选中项 */}
