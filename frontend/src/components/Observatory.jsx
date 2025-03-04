@@ -144,7 +144,7 @@ function Observatory({ isLoggedIn, isAdmin }) {
             <Col xs={12} sm={12} md={6} key={lvl.label}>
               <Card
                 title={lvl.label}
-                bordered={false}
+                variant="outlined"
                 size={isMobile ? "small" : "default"}
                 style={{ 
                   textAlign: 'center', 
