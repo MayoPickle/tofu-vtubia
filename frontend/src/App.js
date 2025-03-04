@@ -97,8 +97,10 @@ function App() {
           placement="right"
           onClose={() => setDrawerVisible(false)}
           open={drawerVisible}
-          bodyStyle={{ padding: 0 }}
-          headerStyle={{ fontSize: '18px', fontWeight: 'bold' }}
+          styles={{
+            body: { padding: 0 },
+            header: { fontSize: '18px', fontWeight: 'bold' }
+          }}
         >
           <Menu 
             mode="vertical" 

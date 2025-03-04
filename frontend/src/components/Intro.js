@@ -71,10 +71,12 @@ function Intro() {
               boxShadow: '0 6px 16px rgba(255, 133, 162, 0.2)',
               border: '1px solid #ffc2d1'
             }}
-            headStyle={{ 
-              backgroundColor: '#ffeef2',
-              borderBottom: '1px solid #ffc2d1',
-              borderRadius: '16px 16px 0 0'
+            styles={{
+              header: { 
+                backgroundColor: '#ffeef2',
+                borderBottom: '1px solid #ffc2d1',
+                borderRadius: '16px 16px 0 0'
+              }
             }}
           >
             <Paragraph style={{ fontSize: isMobile ? '14px' : '16px' }}>
@@ -96,10 +98,12 @@ function Intro() {
               boxShadow: '0 6px 16px rgba(255, 133, 162, 0.2)',
               border: '1px solid #ffc2d1'
             }}
-            headStyle={{ 
-              backgroundColor: '#ffeef2',
-              borderBottom: '1px solid #ffc2d1',
-              borderRadius: '16px 16px 0 0'
+            styles={{
+              header: { 
+                backgroundColor: '#ffeef2',
+                borderBottom: '1px solid #ffc2d1',
+                borderRadius: '16px 16px 0 0'
+              }
             }}
           >
             <Paragraph style={{ fontSize: isMobile ? '14px' : '16px' }}>

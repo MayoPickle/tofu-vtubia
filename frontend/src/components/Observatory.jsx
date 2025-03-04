@@ -151,12 +151,14 @@ function Observatory({ isLoggedIn, isAdmin }) {
                   boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
                   height: '100%'
                 }}
-                headStyle={{
-                  fontSize: isMobile ? '14px' : '16px',
-                  padding: isMobile ? '0 8px' : '0 16px'
-                }}
-                bodyStyle={{
-                  padding: isMobile ? '8px' : '24px'
+                styles={{
+                  header: {
+                    fontSize: isMobile ? '14px' : '16px',
+                    padding: isMobile ? '0 8px' : '0 16px'
+                  },
+                  body: {
+                    padding: isMobile ? '8px' : '24px'
+                  }
                 }}
               >
                 <Paragraph style={{ fontSize: isMobile ? '12px' : '14px', marginBottom: isMobile ? 4 : 8 }}>
