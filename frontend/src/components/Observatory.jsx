@@ -1,6 +1,9 @@
 import React from 'react';
-import { Card, Row, Col, Button, message, Tooltip } from 'antd';
+import { Card, Row, Col, Button, message, Tooltip, Typography, Space } from 'antd';
 import { CopyOutlined } from '@ant-design/icons';
+import { useDeviceDetect } from '../utils/deviceDetector';
+
+const { Title, Paragraph, Text } = Typography;
 
 // 4个挡位配置
 const levels = [
@@ -107,11 +110,19 @@ function copyToClipboard(text) {
 }
 
 function Observatory({ isLoggedIn, isAdmin }) {
-  return (
-    <div style={{ padding: 20 }}>
-      <h2 style={{ marginBottom: 20 }}>观测站</h2>
+  const { isMobile } = useDeviceDetect();
 
-      <Row gutter={[16, 16]}>
+  return (
+    <div style={{ 
+      padding: isMobile ? '12px 8px' : '20px',
+      maxWidth: '1200px',
+      margin: '0 auto'
+    }}>
+      <Title level={isMobile ? 3 : 2} style={{ marginBottom: isMobile ? 12 : 20, textAlign: 'center' }}>
+        观测站
+      </Title>
+
+      <Row gutter={isMobile ? [8, 8] : [16, 16]}>
         {levels.map((lvl, idx) => {
           // 1) 计算真实密码
           const realPwd = getRealPassword(lvl.exponent);
@@ -130,24 +141,39 @@ function Observatory({ isLoggedIn, isAdmin }) {
           const disabledReason = getDisabledReason(idx, isLoggedIn, isAdmin);
 
           return (
-            <Col xs={24} sm={12} md={6} key={lvl.label}>
+            <Col xs={12} sm={12} md={6} key={lvl.label}>
               <Card
                 title={lvl.label}
                 bordered={false}
-                style={{ textAlign: 'center', boxShadow: '0 2px 8px rgba(0,0,0,0.15)' }}
+                size={isMobile ? "small" : "default"}
+                style={{ 
+                  textAlign: 'center', 
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+                  height: '100%'
+                }}
+                headStyle={{
+                  fontSize: isMobile ? '14px' : '16px',
+                  padding: isMobile ? '0 8px' : '0 16px'
+                }}
+                bodyStyle={{
+                  padding: isMobile ? '8px' : '24px'
+                }}
               >
-                <div style={{ fontSize: '14px', marginBottom: 8 }}>
-                  挡位说明：<strong>{lvl.comment}</strong>
-                </div>
+                <Paragraph style={{ fontSize: isMobile ? '12px' : '14px', marginBottom: isMobile ? 4 : 8 }}>
+                  挡位说明：<Text strong>{lvl.comment}</Text>
+                </Paragraph>
 
                 {/* 触发关键词 + 复制按钮 */}
-                <div style={{ marginBottom: 12 }}>
-                  <div style={{ marginBottom: 6 }}>
+                <div style={{ marginBottom: isMobile ? 6 : 12 }}>
+                  <Paragraph style={{ 
+                    marginBottom: isMobile ? 4 : 6,
+                    fontSize: isMobile ? '12px' : '14px'
+                  }}>
                     触发关键词：
-                    <strong style={{ color: '#333' }}>
+                    <Text strong style={{ color: '#333' }}>
                       {finalTrigger}
-                    </strong>
-                  </div>
+                    </Text>
+                  </Paragraph>
 
                   <Tooltip
                     title={disabledReason} // 若为空字符串则不显示
@@ -156,7 +182,7 @@ function Observatory({ isLoggedIn, isAdmin }) {
                     <Button
                       icon={<CopyOutlined />}
                       onClick={() => copyToClipboard(finalTrigger)}
-                      size="small"
+                      size={isMobile ? "small" : "middle"}
                       disabled={!copyAllowed}
                     >
                       复制触发词
@@ -165,10 +191,18 @@ function Observatory({ isLoggedIn, isAdmin }) {
                 </div>
 
                 {/* 显示4位密码(或 "****") */}
-                <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#333' }}>
+                <div style={{ 
+                  fontSize: isMobile ? '18px' : '24px', 
+                  fontWeight: 'bold', 
+                  color: '#333' 
+                }}>
                   {finalPwd}
                 </div>
-                <div style={{ fontSize: '12px', color: '#999', marginTop: 4 }}>
+                <div style={{ 
+                  fontSize: isMobile ? '10px' : '12px', 
+                  color: '#999', 
+                  marginTop: 4 
+                }}>
                   当前 4 位密码
                 </div>
               </Card>

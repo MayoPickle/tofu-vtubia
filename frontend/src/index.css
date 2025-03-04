@@ -11,3 +11,77 @@ code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
 }
+
+/* 响应式布局 */
+/* 移动端样式 */
+@media screen and (max-width: 768px) {
+  .ant-table {
+    font-size: 12px;
+  }
+  
+  .ant-btn {
+    font-size: 12px;
+    padding: 0 8px;
+    height: 28px;
+  }
+  
+  .ant-input {
+    font-size: 14px;
+  }
+  
+  .ant-modal {
+    max-width: 90%;
+    margin: 0 auto;
+  }
+  
+  .ant-card-head-title {
+    font-size: 16px;
+  }
+  
+  .mobile-hidden {
+    display: none !important;
+  }
+}
+
+/* 平板样式 */
+@media screen and (min-width: 769px) and (max-width: 1024px) {
+  .tablet-hidden {
+    display: none !important;
+  }
+}
+
+/* 桌面样式 */
+@media screen and (min-width: 1025px) {
+  .desktop-hidden {
+    display: none !important;
+  }
+}
+
+/* 通用样式 */
+.app-container {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.text-center {
+  text-align: center;
+}
+
+.mt-16 {
+  margin-top: 16px;
+}
+
+.mb-16 {
+  margin-bottom: 16px;
+}
+
+.p-16 {
+  padding: 16px;
+}
+
+/* 适配暗黑模式 */
+@media (prefers-color-scheme: dark) {
+  body {
+    background-color: #121212;
+  }
+}

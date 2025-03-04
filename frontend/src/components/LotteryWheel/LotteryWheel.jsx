@@ -1,12 +1,17 @@
 // LotteryWheel.jsx
 import React, { useState, useEffect } from 'react';
-import { Button, Space, message } from 'antd';
+import { Button, Space, message, Typography, Divider } from 'antd';
 import { defaultPrizes } from './constants';
 import PrizesTable from './PrizesTable';
 import SpinWheel from './SpinWheel';
 import LotteryResult from './LotteryResult';
+import { useDeviceDetect } from '../../utils/deviceDetector';
+
+const { Title } = Typography;
 
 function LotteryWheel({ isLoggedIn }) {
+  const { isMobile } = useDeviceDetect();
+  
   // ============================
   // 1) 管理奖品列表
   // ============================
@@ -84,15 +89,33 @@ function LotteryWheel({ isLoggedIn }) {
   // 4) 页面渲染
   // ============================
   return (
-    <div style={{ padding: 20 }}>
-      <h2>抽奖转盘</h2>
+    <div style={{ 
+      padding: isMobile ? '12px 8px' : '20px',
+      maxWidth: '1200px',
+      margin: '0 auto'
+    }}>
+      <Title level={isMobile ? 3 : 2} style={{ marginBottom: isMobile ? 12 : 20, textAlign: 'center' }}>
+        抽奖转盘
+      </Title>
 
-      <Space style={{ marginBottom: 10 }}>
-        <Button type="primary" onClick={handleAddPrize}>
+      <Space style={{ 
+        marginBottom: isMobile ? 8 : 10,
+        display: 'flex',
+        flexDirection: isMobile ? 'column' : 'row',
+        width: isMobile ? '100%' : 'auto'
+      }}>
+        <Button 
+          type="primary" 
+          onClick={handleAddPrize}
+          style={{ width: isMobile ? '100%' : 'auto' }}
+        >
           添加奖品
         </Button>
         {isLoggedIn && (
-          <Button onClick={handleSavePrizes}>
+          <Button
+            onClick={handleSavePrizes}
+            style={{ width: isMobile ? '100%' : 'auto' }}
+          >
             保存奖品
           </Button>
         )}
@@ -101,9 +124,18 @@ function LotteryWheel({ isLoggedIn }) {
       {/* 奖品表格 */}
       <PrizesTable prizes={prizes} setPrizes={setPrizes} />
 
-      {/* 转盘 + 抽奖结果并排 */}
-      <div style={{ display: 'flex', gap: 40, marginTop: 20 }}>
+      {/* 转盘 + 抽奖结果 - 移动端垂直排列，桌面端水平排列 */}
+      <div style={{ 
+        display: 'flex', 
+        flexDirection: isMobile ? 'column' : 'row', 
+        gap: isMobile ? 16 : 40, 
+        marginTop: isMobile ? 12 : 20,
+        alignItems: 'center'
+      }}>
         <SpinWheel prizes={prizes} result={result} setResult={setResult} />
+        
+        {isMobile && <Divider style={{ margin: '12px 0' }} />}
+        
         <LotteryResult result={result} />
       </div>
     </div>

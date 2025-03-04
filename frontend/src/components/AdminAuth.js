@@ -1,14 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Dropdown, Menu, Modal, Form, Input, message, Avatar, Typography, Divider } from 'antd';
-import { UserOutlined } from '@ant-design/icons';
+import { Dropdown, Menu, Modal, Form, Input, message, Avatar, Typography, Divider, Button, Space } from 'antd';
+import { UserOutlined, LogoutOutlined, LoginOutlined, UserAddOutlined } from '@ant-design/icons';
 import axios from 'axios';
 import MD5 from 'crypto-js/md5';
+import { useDeviceDetect } from '../utils/deviceDetector';
 
 const { Text } = Typography;
 
 function AdminAuth() {
   const navigate = useNavigate();
+  const { isMobile } = useDeviceDetect();
 
   const [isAdmin, setIsAdmin] = useState(false);
   const [username, setUsername] = useState(null);
@@ -99,83 +101,171 @@ function AdminAuth() {
         setShowRegisterModal(false);
       }
     } catch (err) {
-      if (err.response?.status === 409) {
-        message.error(err.response?.data?.message || '用户名已被占用');
-      } else {
-        message.error(err.response?.data?.message || '注册失败');
-      }
+      message.error(err.response?.data?.message || '注册失败');
     }
   };
-  
 
-  // 下拉菜单
-  const menu = (
-    <Menu>
-      <Menu.Item key="user-info" disabled>
-        <Text strong>{username || '未登录'}</Text>
-      </Menu.Item>
-      <Menu.Item key="role" disabled>
-        {isAdmin ? '管理员' : '普通用户'}
-      </Menu.Item>
-      {isAdmin ? (
-        <Menu.Item key="manage-users">
-          <Link to="/admin/users">用户管理</Link>
-        </Menu.Item>
-      ) : null}
-      <Menu.Divider />
-      <Menu.Item key="logout" danger onClick={handleLogout}>
-        退出登录
-      </Menu.Item>
-    </Menu>
-  );
+  // 渲染移动端界面
+  const renderMobileView = () => {
+    // 已登录状态
+    if (username) {
+      return (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Avatar icon={<UserOutlined />} />
+            <Text strong>{username}</Text>
+            {isAdmin && <Text type="success">(管理员)</Text>}
+          </div>
+          
+          <Space>
+            {isAdmin && (
+              <Button 
+                size="small" 
+                type="primary"
+                onClick={() => navigate('/admin/users')}
+              >
+                用户管理
+              </Button>
+            )}
+            
+            <Button 
+              size="small" 
+              danger 
+              icon={<LogoutOutlined />}
+              onClick={handleLogout}
+            >
+              退出
+            </Button>
+          </Space>
+        </div>
+      );
+    }
+    
+    // 未登录状态
+    return (
+      <Space direction="vertical" style={{ width: '100%' }}>
+        <Button 
+          block 
+          type="primary" 
+          icon={<LoginOutlined />}
+          onClick={() => setShowLoginModal(true)}
+        >
+          登录
+        </Button>
+        
+        <Button 
+          block 
+          icon={<UserAddOutlined />}
+          onClick={openRegisterModal}
+        >
+          注册
+        </Button>
+      </Space>
+    );
+  };
+
+  // 渲染PC端界面
+  const renderDesktopView = () => {
+    // 已登录状态
+    if (username) {
+      const items = [
+        {
+          key: 'username',
+          label: (
+            <div style={{ padding: '6px 0' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Avatar icon={<UserOutlined />} />
+                <Text strong>{username}</Text>
+              </div>
+              {isAdmin && (
+                <div style={{ marginTop: 4 }}>
+                  <Text type="success">管理员身份</Text>
+                </div>
+              )}
+            </div>
+          ),
+          disabled: true,
+        },
+        {
+          type: 'divider',
+        }
+      ];
+      
+      if (isAdmin) {
+        items.push({
+          key: 'admin',
+          label: <Link to="/admin/users">用户管理</Link>,
+        });
+      }
+      
+      items.push({
+        key: 'logout',
+        label: (
+          <a onClick={handleLogout}>
+            退出登录
+          </a>
+        ),
+        danger: true,
+      });
+      
+      return (
+        <Dropdown
+          menu={{ items }}
+          placement="bottomRight"
+          trigger={['click']}
+        >
+          <div style={{ cursor: 'pointer' }}>
+            <Avatar icon={<UserOutlined />} />
+            <span style={{ marginLeft: 8, color: '#fff' }}>{username}</span>
+          </div>
+        </Dropdown>
+      );
+    }
+    
+    // 未登录状态
+    return (
+      <div style={{ color: '#fff' }}>
+        <a style={{ color: '#fff' }} onClick={() => setShowLoginModal(true)}>
+          登录
+        </a>
+        <Divider type="vertical" style={{ backgroundColor: '#666' }} />
+        <a style={{ color: '#fff' }} onClick={openRegisterModal}>
+          注册
+        </a>
+      </div>
+    );
+  };
 
   return (
     <>
-      {username ? (
-        // ✅ 已登录
-        <Dropdown overlay={menu} placement="bottomRight">
-          <div style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', color: '#fff' }}>
-            <Avatar size="small" icon={<UserOutlined />} style={{ marginRight: 8 }} />
-            <Text style={{ color: '#fff' }}>{username}</Text>
-          </div>
-        </Dropdown>
-      ) : (
-        // ✅ 未登录: 显示 "登录" + "注册" 按钮
-        <div style={{ display: 'flex', gap: '12px' }}>
-          <Text style={{ color: '#fff', cursor: 'pointer' }} onClick={() => setShowLoginModal(true)}>
-            登录
-          </Text>
-          <Divider type="vertical" style={{ background: '#fff', height: '24px' }} />
-          <Text style={{ color: '#fff', cursor: 'pointer' }} onClick={openRegisterModal}>
-            注册
-          </Text>
-        </div>
-      )}
+      {/* 根据设备类型渲染不同的界面 */}
+      {isMobile ? renderMobileView() : renderDesktopView()}
 
-      {/* 登录弹窗 */}
+      {/* 登录对话框 */}
       <Modal
         title="登录"
         open={showLoginModal}
-        onOk={handleLoginSubmit}
         onCancel={() => setShowLoginModal(false)}
+        onOk={handleLoginSubmit}
         okText="登录"
         cancelText="取消"
+        maskClosable={false}
       >
-        {/* 重制密码提示 */}
-        <Text type="secondary" style={{ display: 'block', marginBottom: 16 }}>
-          如果忘记登录密码，请联系管理员重制。
-        </Text>
-        <Form form={loginForm} layout="vertical">
+        <Form
+          form={loginForm}
+          layout="vertical"
+        >
           <Form.Item
-            label="用户名"
             name="username"
+            label="用户名"
             rules={[{ required: true, message: '请输入用户名' }]}
           >
-            <Input placeholder="请输入登录账户名" />
+            <Input prefix={<UserOutlined />} placeholder="请输入用户名" />
           </Form.Item>
+
           <Form.Item
-            label="密码"
             name="password"
+            label="密码"
             rules={[{ required: true, message: '请输入密码' }]}
           >
             <Input.Password placeholder="请输入密码" />
@@ -183,41 +273,46 @@ function AdminAuth() {
         </Form>
       </Modal>
 
-      {/* 注册弹窗 */}
+      {/* 注册对话框 */}
       <Modal
-        title="注册新用户"
+        title="注册"
         open={showRegisterModal}
         onOk={handleRegister}
         onCancel={() => setShowRegisterModal(false)}
         okText="注册"
         cancelText="取消"
+        maskClosable={false}
       >
-        {/* 密码存储安全提示 */}
-        <Text type="secondary" style={{ display: 'block', marginBottom: 16 }}>
-          密码将以哈希形式加密存储在数据库中，网站维护者不会得知你的密码。
-        </Text>
-
         <Form form={registerForm} layout="vertical">
           <Form.Item
-            label="用户名"
             name="username"
-            rules={[{ required: true, message: '请输入用户名' }]}
+            label="用户名"
+            rules={[
+              { required: true, message: '请输入用户名' },
+              { min: 3, message: '用户名至少3个字符' },
+              { max: 20, message: '用户名最多20个字符' },
+            ]}
           >
-            <Input placeholder="用户名将作为登录账户" />
+            <Input />
           </Form.Item>
+
           <Form.Item
-            label="密码"
             name="password"
-            rules={[{ required: true, message: '请输入密码' }]}
+            label="密码"
+            rules={[
+              { required: true, message: '请输入密码' },
+              { min: 6, message: '密码至少6个字符' },
+            ]}
           >
-            <Input.Password placeholder="请设置密码" />
+            <Input.Password />
           </Form.Item>
+
           <Form.Item
+            name="confirm"
             label="确认密码"
-            name="confirmPassword"
             dependencies={['password']}
             rules={[
-              { required: true, message: '请再次输入密码' },
+              { required: true, message: '请确认密码' },
               ({ getFieldValue }) => ({
                 validator(_, value) {
                   if (!value || getFieldValue('password') === value) {
@@ -228,25 +323,14 @@ function AdminAuth() {
               }),
             ]}
           >
-            <Input.Password placeholder="请再次输入密码" />
+            <Input.Password />
           </Form.Item>
+          
           <Form.Item
-            label="B站UID(可选)"
             name="bilibili_uid"
-            tooltip="可以在B站个人页面找到，纯数字。提供UID可以自动获取头像等信息"
-            rules={[
-              {
-                validator: (_, value) => {
-                  if (!value) return Promise.resolve();
-                  if (/^\d+$/.test(value)) {
-                    return Promise.resolve();
-                  }
-                  return Promise.reject('B站UID必须是数字');
-                },
-              },
-            ]}
+            label="B站UID（选填）"
           >
-            <Input placeholder="例如1234567" />
+            <Input placeholder="请输入你的B站UID" />
           </Form.Item>
         </Form>
       </Modal>

@@ -1,12 +1,17 @@
 // SongList.js
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Table, Input, Button, Modal, Form, message, Space } from 'antd';
+import { Table, Input, Button, Modal, Form, message, Space, Card, List, Typography } from 'antd';
+import { SearchOutlined, PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
+import { useDeviceDetect } from '../utils/deviceDetector';
+
+const { Text, Title } = Typography;
 
 function SongList() {
   const [songs, setSongs] = useState([]);
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const { isMobile } = useDeviceDetect();
 
   // 是否管理员
   const [isAdmin, setIsAdmin] = useState(false);
@@ -103,10 +108,9 @@ function SongList() {
     editForm.setFieldsValue({
       title: record.title,
       artist: record.artist,
-      album: record.album,
-      genre: record.genre,
       year: record.year,
-      meta_data: record.meta_data,
+      link: record.link,
+      description: record.description
     });
     setEditModalVisible(true);
   };
@@ -117,17 +121,18 @@ function SongList() {
       if (values.year) {
         values.year = parseInt(values.year, 10);
       }
-      await axios.put(`/api/songs/${currentEditId}`, values, { withCredentials: true });
-      message.success('编辑歌曲成功');
+      await axios.put(`/api/songs/${currentEditId}`, values, {
+        withCredentials: true
+      });
+      message.success('更新成功');
       setEditModalVisible(false);
-      setCurrentEditId(null);
       fetchSongs(searchTerm);
     } catch (err) {
-      console.error('Error editing song:', err);
+      console.error('Error updating song:', err);
       if (err.response?.status === 403) {
         message.error('没有管理员权限，无法编辑');
       } else {
-        message.error('编辑失败');
+        message.error('更新失败');
       }
     }
   };
@@ -141,17 +146,15 @@ function SongList() {
 
     Modal.confirm({
       title: '确认删除',
-      content: '确定要删除这首歌曲吗？',
-      okText: '确认',
-      cancelText: '取消',
+      content: '确定要删除这首歌曲吗？此操作不可恢复。',
       onOk: async () => {
         try {
           await axios.delete(`/api/songs/${id}`, { withCredentials: true });
           message.success('删除成功');
           fetchSongs(searchTerm);
-        } catch (error) {
-          console.error('Error deleting song:', error);
-          if (error.response?.status === 403) {
+        } catch (err) {
+          console.error('Error deleting song:', err);
+          if (err.response?.status === 403) {
             message.error('没有管理员权限，无法删除');
           } else {
             message.error('删除失败');
@@ -161,143 +164,194 @@ function SongList() {
     });
   };
 
-  // 表格列
+  // ========================== 表格配置 ==========================
   const columns = [
-    { title: '标题', dataIndex: 'title', key: 'title' },
-    { title: '歌手', dataIndex: 'artist', key: 'artist' },
-    { title: '专辑', dataIndex: 'album', key: 'album' },
-    { title: '风格', dataIndex: 'genre', key: 'genre' },
-    { title: '年份', dataIndex: 'year', key: 'year', width: 80 },
-    { title: 'Meta', dataIndex: 'meta_data', key: 'meta_data' },
+    {
+      title: '歌曲名',
+      dataIndex: 'title',
+      key: 'title',
+      render: (text, record) => <a href={record.link} target="_blank" rel="noopener noreferrer">{text}</a>
+    },
+    {
+      title: '艺术家',
+      dataIndex: 'artist',
+      key: 'artist'
+    },
+    {
+      title: '年代',
+      dataIndex: 'year',
+      key: 'year',
+      responsive: ['md']
+    },
+    {
+      title: '描述',
+      dataIndex: 'description',
+      key: 'description',
+      responsive: ['lg']
+    },
     {
       title: '操作',
       key: 'action',
-      width: 120,
       render: (_, record) => (
-        <Space>
-          <Button type="link" onClick={() => handleOpenEditModal(record)}>
-            编辑
-          </Button>
-          <Button type="link" danger onClick={() => handleDeleteSong(record.id)}>
-            删除
-          </Button>
-        </Space>
+        isAdmin ? (
+          <Space>
+            <Button 
+              icon={<EditOutlined />} 
+              size="small" 
+              onClick={() => handleOpenEditModal(record)}
+            />
+            <Button 
+              icon={<DeleteOutlined />} 
+              size="small" 
+              danger 
+              onClick={() => handleDeleteSong(record.id)}
+            />
+          </Space>
+        ) : null
       ),
     },
   ];
 
-  return (
-    <div style={{ padding: '20px' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 2 }}>
-        <h1>歌曲列表</h1>
-      </div>
+  // ======== 渲染表单组件 ========
+  const renderSongForm = (form, onFinish, modalVisible, setModalVisible, title) => (
+    <Modal
+      title={title}
+      open={modalVisible}
+      onCancel={() => setModalVisible(false)}
+      onOk={onFinish}
+      destroyOnClose
+    >
+      <Form form={form} layout="vertical">
+        <Form.Item name="title" label="歌曲名" rules={[{ required: true, message: '请输入歌曲名' }]}>
+          <Input placeholder="输入歌曲名" />
+        </Form.Item>
+        <Form.Item name="artist" label="艺术家" rules={[{ required: true, message: '请输入艺术家' }]}>
+          <Input placeholder="输入艺术家" />
+        </Form.Item>
+        <Form.Item name="year" label="年代">
+          <Input placeholder="输入年代（如：2021）" />
+        </Form.Item>
+        <Form.Item name="link" label="链接">
+          <Input placeholder="输入音乐链接" />
+        </Form.Item>
+        <Form.Item name="description" label="描述">
+          <Input.TextArea placeholder="输入歌曲描述" autoSize={{ minRows: 3, maxRows: 6 }} />
+        </Form.Item>
+      </Form>
+    </Modal>
+  );
 
-      <div style={{ 
-        display: 'flex', 
-        alignItems: 'center', 
-        justifyContent: 'space-between', 
-        marginBottom: 20 
-      }}>
-        {/* 搜索栏 + 添加歌曲按钮 */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-          <Input.Search
-            placeholder="搜索歌曲或歌手..."
-            onSearch={onSearch}
-            allowClear
-            style={{ width: 300 }}
+  // ======== 移动端 - 歌曲列表渲染 ========
+  const renderMobileView = () => {
+    return (
+      <div style={{ padding: '0 8px' }}>
+        <div style={{ marginBottom: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <Input.Search 
+            placeholder="搜索歌曲" 
+            allowClear 
+            onSearch={onSearch} 
+            style={{ width: '100%' }} 
           />
-          <Button type="primary" onClick={handleOpenAddModal}>
-            添加歌曲
-          </Button>
+          
+          {isAdmin && (
+            <Button 
+              type="primary" 
+              icon={<PlusOutlined />} 
+              onClick={handleOpenAddModal}
+            >
+              添加歌曲
+            </Button>
+          )}
         </div>
+
+        <List
+          loading={loading}
+          dataSource={songs}
+          renderItem={(item) => (
+            <List.Item
+              key={item.id}
+              actions={isAdmin ? [
+                <Button 
+                  icon={<EditOutlined />} 
+                  size="small" 
+                  onClick={() => handleOpenEditModal(item)}
+                />,
+                <Button 
+                  icon={<DeleteOutlined />} 
+                  size="small" 
+                  danger 
+                  onClick={() => handleDeleteSong(item.id)}
+                />
+              ] : []}
+            >
+              <List.Item.Meta
+                title={<a href={item.link} target="_blank" rel="noopener noreferrer">{item.title}</a>}
+                description={
+                  <div>
+                    <div><Text strong>艺术家:</Text> {item.artist}</div>
+                    {item.year && <div><Text strong>年代:</Text> {item.year}</div>}
+                    {item.description && <div><Text strong>描述:</Text> {item.description}</div>}
+                  </div>
+                }
+              />
+            </List.Item>
+          )}
+        />
       </div>
+    );
+  };
 
-      {/* 表格 */}
-      <Table
-        columns={columns}
-        dataSource={Array.isArray(songs) ? songs : []}
-        rowKey="id"
-        loading={loading}
-        pagination={{ pageSize: 8 }}
-      />
+  // ======== PC端 - 表格渲染 ========
+  const renderDesktopView = () => {
+    return (
+      <div style={{ padding: '24px' }}>
+        <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between' }}>
+          <Input.Search 
+            placeholder="搜索歌曲" 
+            allowClear 
+            onSearch={onSearch} 
+            style={{ width: 300 }} 
+          />
+          
+          {isAdmin && (
+            <Button 
+              type="primary" 
+              icon={<PlusOutlined />} 
+              onClick={handleOpenAddModal}
+            >
+              添加歌曲
+            </Button>
+          )}
+        </div>
 
-      {/* 添加歌曲弹窗 */}
-      <Modal
-        title="添加新歌曲"
-        visible={addModalVisible}
-        onOk={handleAddSong}
-        onCancel={() => setAddModalVisible(false)}
-        okText="提交"
-        cancelText="取消"
-      >
-        <Form form={addForm} layout="vertical">
-          <Form.Item
-            label="标题"
-            name="title"
-            rules={[{ required: true, message: '请输入歌曲标题' }]}
-          >
-            <Input />
-          </Form.Item>
-          <Form.Item
-            label="歌手"
-            name="artist"
-            rules={[{ required: true, message: '请输入歌手名称' }]}
-          >
-            <Input />
-          </Form.Item>
-          <Form.Item label="专辑" name="album">
-            <Input />
-          </Form.Item>
-          <Form.Item label="风格" name="genre">
-            <Input />
-          </Form.Item>
-          <Form.Item label="年份" name="year">
-            <Input type="number" />
-          </Form.Item>
-          <Form.Item label="Meta" name="meta_data">
-            <Input />
-          </Form.Item>
-        </Form>
-      </Modal>
+        <Table 
+          columns={columns} 
+          dataSource={songs} 
+          rowKey="id" 
+          loading={loading}
+          pagination={{
+            pageSize: 10,
+            showSizeChanger: true,
+            showQuickJumper: true,
+          }}
+        />
+      </div>
+    );
+  };
 
-      {/* 编辑歌曲弹窗 */}
-      <Modal
-        title="编辑歌曲"
-        visible={editModalVisible}
-        onOk={handleEditSong}
-        onCancel={() => setEditModalVisible(false)}
-        okText="保存"
-        cancelText="取消"
-      >
-        <Form form={editForm} layout="vertical">
-          <Form.Item
-            label="标题"
-            name="title"
-            rules={[{ required: true, message: '请输入歌曲标题' }]}
-          >
-            <Input />
-          </Form.Item>
-          <Form.Item
-            label="歌手"
-            name="artist"
-            rules={[{ required: true, message: '请输入歌手名称' }]}
-          >
-            <Input />
-          </Form.Item>
-          <Form.Item label="专辑" name="album">
-            <Input />
-          </Form.Item>
-          <Form.Item label="风格" name="genre">
-            <Input />
-          </Form.Item>
-          <Form.Item label="年份" name="year">
-            <Input type="number" />
-          </Form.Item>
-          <Form.Item label="Meta" name="meta_data">
-            <Input />
-          </Form.Item>
-        </Form>
-      </Modal>
+  return (
+    <div>
+      <Title level={2} style={{ margin: '16px 0', textAlign: 'center' }}>
+        音乐小馆
+      </Title>
+
+      {isMobile ? renderMobileView() : renderDesktopView()}
+
+      {/* 新增歌曲对话框 */}
+      {renderSongForm(addForm, handleAddSong, addModalVisible, setAddModalVisible, '添加歌曲')}
+      
+      {/* 编辑歌曲对话框 */}
+      {renderSongForm(editForm, handleEditSong, editModalVisible, setEditModalVisible, '编辑歌曲')}
     </div>
   );
 }
