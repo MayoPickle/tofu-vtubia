@@ -167,8 +167,10 @@ def register_routes(app):
         - 否则401
         """
         data = request.get_json() or {}
-        username = data.get("username", "").strip()
-        password = data.get("password", "").strip()
+        username = data.get("username") or ""
+        username = username.strip()
+        password = data.get("password") or ""
+        password = password.strip()
 
         if not username or not password:
             return jsonify({"message": "用户名和密码不能为空"}), 400
@@ -208,10 +210,14 @@ def register_routes(app):
         - 失败：返回错误信息
         """
         data = request.get_json() or {}
-        username = data.get("username", "").strip()
-        password = data.get("password", "").strip()
-        password_confirm = data.get("password_confirm", "").strip()
-        bilibili_uid = data.get("bilibili_uid", "").strip()
+        username = data.get("username") or ""
+        username = username.strip()
+        password = data.get("password") or ""
+        password = password.strip()
+        password_confirm = data.get("password_confirm") or ""
+        password_confirm = password_confirm.strip()
+        bilibili_uid = data.get("bilibili_uid") or ""
+        bilibili_uid = bilibili_uid.strip()
 
         # 基本验证
         if not username or not password:
@@ -345,7 +351,8 @@ def register_routes(app):
             return jsonify({"message": "需要管理员权限"}), 403
         
         data = request.get_json() or {}
-        new_password = data.get("password", "").strip()
+        new_password = data.get("password") or ""
+        new_password = new_password.strip()
         
         if not new_password:
             return jsonify({"message": "密码不能为空"}), 400
@@ -420,9 +427,9 @@ def register_routes(app):
         params = []
         
         if search:
-            query += """ WHERE title LIKE ? OR artist LIKE ? OR album LIKE ?"""
+            query += """ WHERE title LIKE ? OR artist LIKE ? OR album LIKE ? OR tags LIKE ?"""
             search_term = f"%{search}%"
-            params = [search_term, search_term, search_term]
+            params = [search_term, search_term, search_term, search_term]
         
         # 添加分页
         query += " ORDER BY id DESC LIMIT ? OFFSET ?"
@@ -435,8 +442,8 @@ def register_routes(app):
         # 获取总数
         count_query = "SELECT COUNT(*) FROM songs"
         if search:
-            count_query += """ WHERE title LIKE ? OR artist LIKE ? OR album LIKE ?"""
-            cur.execute(count_query, [search_term, search_term, search_term])
+            count_query += """ WHERE title LIKE ? OR artist LIKE ? OR album LIKE ? OR tags LIKE ?"""
+            cur.execute(count_query, [search_term, search_term, search_term, search_term])
         else:
             cur.execute(count_query)
             
@@ -453,7 +460,8 @@ def register_routes(app):
                 "album": row["album"],
                 "genre": row["genre"],
                 "year": row["year"],
-                "meta_data": row["meta_data"]
+                "meta_data": row["meta_data"],
+                "tags": row["tags"]
             })
         
         return jsonify({
@@ -485,7 +493,8 @@ def register_routes(app):
             "album": row["album"],
             "genre": row["genre"],
             "year": row["year"],
-            "meta_data": row["meta_data"]
+            "meta_data": row["meta_data"],
+            "tags": row["tags"]
         }
         
         return jsonify(song), 200
@@ -499,26 +508,32 @@ def register_routes(app):
             return jsonify({"message": "需要管理员权限"}), 403
         
         data = request.get_json() or {}
-        title = data.get("title", "").strip()
-        artist = data.get("artist", "").strip()
+        title = data.get("title") or ""
+        title = title.strip()
+        artist = data.get("artist") or ""
+        artist = artist.strip()
         
         # 基本验证
         if not title or not artist:
             return jsonify({"message": "歌曲标题和艺术家不能为空"}), 400
         
         # 提取其他字段
-        album = data.get("album", "").strip()
-        genre = data.get("genre", "").strip()
+        album = data.get("album") or ""
+        album = album.strip()
+        genre = data.get("genre") or ""
+        genre = genre.strip()
         year = data.get("year")
         meta_data = data.get("meta_data", "")
+        tags = data.get("tags") or ""
+        tags = tags.strip()
         
         conn = get_connection()
         cur = conn.cursor()
         
         cur.execute("""
-            INSERT INTO songs (title, artist, album, genre, year, meta_data)
-            VALUES (?, ?, ?, ?, ?, ?)
-        """, (title, artist, album, genre, year, meta_data))
+            INSERT INTO songs (title, artist, album, genre, year, meta_data, tags)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        """, (title, artist, album, genre, year, meta_data, tags))
         
         conn.commit()
         song_id = cur.lastrowid
@@ -538,18 +553,24 @@ def register_routes(app):
             return jsonify({"message": "需要管理员权限"}), 403
         
         data = request.get_json() or {}
-        title = data.get("title", "").strip()
-        artist = data.get("artist", "").strip()
+        title = data.get("title") or ""
+        title = title.strip()
+        artist = data.get("artist") or ""
+        artist = artist.strip()
         
         # 基本验证
         if not title or not artist:
             return jsonify({"message": "歌曲标题和艺术家不能为空"}), 400
         
         # 提取其他字段
-        album = data.get("album", "").strip()
-        genre = data.get("genre", "").strip()
+        album = data.get("album") or ""
+        album = album.strip()
+        genre = data.get("genre") or ""
+        genre = genre.strip()
         year = data.get("year")
         meta_data = data.get("meta_data", "")
+        tags = data.get("tags") or ""
+        tags = tags.strip()
         
         conn = get_connection()
         cur = conn.cursor()
@@ -562,15 +583,10 @@ def register_routes(app):
         
         # 更新歌曲信息
         cur.execute("""
-            UPDATE songs SET
-                title = ?,
-                artist = ?,
-                album = ?,
-                genre = ?,
-                year = ?,
-                meta_data = ?
+            UPDATE songs
+            SET title = ?, artist = ?, album = ?, genre = ?, year = ?, meta_data = ?, tags = ?
             WHERE id = ?
-        """, (title, artist, album, genre, year, meta_data, song_id))
+        """, (title, artist, album, genre, year, meta_data, tags, song_id))
         
         conn.commit()
         conn.close()

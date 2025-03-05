@@ -13,7 +13,7 @@ function PrizesTable({ prizes, setPrizes }) {
   // 图片上传
   const handleImageUpload = (file, idx) => {
     const formData = new FormData();
-    formData.append('image', file);
+    formData.append('file', file);
 
     fetch('/api/upload', {
       method: 'POST',
@@ -21,13 +21,13 @@ function PrizesTable({ prizes, setPrizes }) {
     })
       .then((res) => res.json())
       .then((data) => {
-        if (data.success) {
+        if (data.url) {
           const newPrizes = [...prizes];
           newPrizes[idx].image = data.url;
           setPrizes(newPrizes);
           message.success('图片上传成功');
         } else {
-          message.error('图片上传失败');
+          message.error(data.message || '图片上传失败');
         }
       })
       .catch((err) => {
@@ -67,82 +67,6 @@ function PrizesTable({ prizes, setPrizes }) {
     setPrizes(newList);
   };
 
-  const columns = [
-    {
-      title: '奖品名称',
-      dataIndex: 'name',
-      render: (text, record, idx) => (
-        <Input
-          value={text}
-          onChange={(e) => handleNameChange(e.target.value, idx)}
-        />
-      ),
-    },
-    {
-      title: '概率(0~1)',
-      dataIndex: 'probability',
-      render: (val, record, idx) => (
-        <InputNumber
-          min={0}
-          max={1}
-          step={0.01}
-          value={val}
-          onChange={(value) => handleProbabilityChange(value, idx)}
-        />
-      ),
-    },
-    {
-      title: '图片',
-      dataIndex: 'image',
-      responsive: ['md'],
-      render: (val, record, idx) => (
-        <Space>
-          <Upload
-            beforeUpload={(file) => handleImageUpload(file, idx)}
-            showUploadList={false}
-          >
-            <Button icon={<UploadOutlined />}>上传</Button>
-          </Upload>
-
-          <Input
-            style={{ width: 200 }}
-            value={val}
-            placeholder="或在此粘贴图片链接"
-            onChange={(e) => handleImageUrlChange(e.target.value, idx)}
-          />
-
-          {val ? (
-            <img
-              src={val}
-              alt="奖品图片"
-              style={{
-                width: 50,
-                height: 50,
-                objectFit: 'cover',
-                border: '1px solid #ccc',
-              }}
-            />
-          ) : (
-            <div style={{ color: '#999' }}>暂无</div>
-          )}
-        </Space>
-      ),
-    },
-    {
-      title: '操作',
-      render: (val, record, idx) => (
-        <Space>
-          <Popconfirm
-            title="确认删除该奖品？"
-            onConfirm={() => handleDeletePrize(idx)}
-          >
-            <Button danger>删除</Button>
-          </Popconfirm>
-        </Space>
-      ),
-    },
-  ];
-
   // 移动端列表视图
   const renderMobileView = () => {
     if (!prizes || prizes.length === 0) {
@@ -153,13 +77,22 @@ function PrizesTable({ prizes, setPrizes }) {
       <List
         dataSource={prizes}
         renderItem={(item, idx) => (
-          <List.Item style={{ padding: 0, marginBottom: 8 }}>
+          <List.Item style={{ padding: 0, marginBottom: 12 }}>
             <Card 
               size="small" 
-              style={{ width: '100%' }}
+              style={{ 
+                width: '100%',
+                boxShadow: '0 2px 6px rgba(0,0,0,0.05)',
+                borderRadius: '8px'
+              }}
               title={
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span>奖品 {idx + 1}</span>
+                  <span style={{ 
+                    fontWeight: 500, 
+                    color: '#1890ff'
+                  }}>
+                    奖品 {idx + 1}
+                  </span>
                   <Popconfirm
                     title="确认删除该奖品？"
                     onConfirm={() => handleDeletePrize(idx)}
@@ -169,20 +102,22 @@ function PrizesTable({ prizes, setPrizes }) {
                       type="text" 
                       size="small"
                       icon={<DeleteOutlined />}
+                      style={{ color: '#ff85c0' }}
                     />
                   </Popconfirm>
                 </div>
               }
             >
               <Form layout="vertical">
-                <Form.Item label="奖品名称" style={{ marginBottom: 8 }}>
+                <Form.Item label="奖品名称" style={{ marginBottom: 12 }}>
                   <Input
                     value={item.name}
                     onChange={(e) => handleNameChange(e.target.value, idx)}
+                    placeholder="请输入奖品名称"
                   />
                 </Form.Item>
                 
-                <Form.Item label="概率(0~1)" style={{ marginBottom: 8 }}>
+                <Form.Item label="概率(0~1)" style={{ marginBottom: 12 }}>
                   <InputNumber
                     min={0}
                     max={1}
@@ -190,6 +125,7 @@ function PrizesTable({ prizes, setPrizes }) {
                     value={item.probability}
                     onChange={(value) => handleProbabilityChange(value, idx)}
                     style={{ width: '100%' }}
+                    placeholder="奖品抽中概率"
                   />
                 </Form.Item>
                 
@@ -201,7 +137,11 @@ function PrizesTable({ prizes, setPrizes }) {
                       onChange={(e) => handleImageUrlChange(e.target.value, idx)}
                     />
                     
-                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <div style={{ 
+                      display: 'flex', 
+                      justifyContent: 'space-between',
+                      alignItems: 'center'
+                    }}>
                       <Upload
                         beforeUpload={(file) => handleImageUpload(file, idx)}
                         showUploadList={false}
@@ -209,6 +149,8 @@ function PrizesTable({ prizes, setPrizes }) {
                         <Button 
                           icon={<UploadOutlined />} 
                           size="small"
+                          type="primary"
+                          style={{ backgroundColor: '#ff85c0', borderColor: '#ff85c0' }}
                         >
                           上传图片
                         </Button>
@@ -219,10 +161,11 @@ function PrizesTable({ prizes, setPrizes }) {
                           src={item.image}
                           alt="奖品图片"
                           style={{
-                            width: 40,
-                            height: 40,
+                            width: 48,
+                            height: 48,
                             objectFit: 'cover',
-                            border: '1px solid #ccc',
+                            borderRadius: '4px',
+                            border: '1px solid #eee',
                           }}
                         />
                       )}
@@ -239,13 +182,111 @@ function PrizesTable({ prizes, setPrizes }) {
 
   // 桌面端表格视图
   const renderDesktopView = () => {
+    const updatedColumns = [
+      {
+        title: '奖品名称',
+        dataIndex: 'name',
+        render: (text, record, idx) => (
+          <Input
+            value={text}
+            onChange={(e) => handleNameChange(e.target.value, idx)}
+            placeholder="请输入奖品名称"
+            style={{ width: '90%' }}
+          />
+        ),
+      },
+      {
+        title: '概率(0~1)',
+        dataIndex: 'probability',
+        width: 120,
+        render: (val, record, idx) => (
+          <InputNumber
+            min={0}
+            max={1}
+            step={0.01}
+            value={val}
+            onChange={(value) => handleProbabilityChange(value, idx)}
+            style={{ width: '100%' }}
+          />
+        ),
+      },
+      {
+        title: '图片',
+        dataIndex: 'image',
+        responsive: ['md'],
+        render: (val, record, idx) => (
+          <Space>
+            <Upload
+              beforeUpload={(file) => handleImageUpload(file, idx)}
+              showUploadList={false}
+            >
+              <Button 
+                icon={<UploadOutlined />} 
+                type="primary"
+                size="small"
+                style={{ backgroundColor: '#ff85c0', borderColor: '#ff85c0' }}
+              >
+                上传
+              </Button>
+            </Upload>
+
+            <Input
+              style={{ width: 200 }}
+              value={val}
+              placeholder="或在此粘贴图片链接"
+              onChange={(e) => handleImageUrlChange(e.target.value, idx)}
+            />
+
+            {val ? (
+              <img
+                src={val}
+                alt="奖品图片"
+                style={{
+                  width: 48,
+                  height: 48,
+                  objectFit: 'cover',
+                  borderRadius: '4px',
+                  border: '1px solid #eee',
+                }}
+              />
+            ) : (
+              <div style={{ color: '#999' }}>暂无</div>
+            )}
+          </Space>
+        ),
+      },
+      {
+        title: '操作',
+        width: 80,
+        render: (val, record, idx) => (
+          <Space>
+            <Popconfirm
+              title="确认删除该奖品？"
+              onConfirm={() => handleDeletePrize(idx)}
+            >
+              <Button 
+                danger 
+                size="small"
+                icon={<DeleteOutlined />}
+                style={{ backgroundColor: '#fff0f6', borderColor: '#ffadd2', color: '#ff85c0' }}
+              >
+                删除
+              </Button>
+            </Popconfirm>
+          </Space>
+        ),
+      },
+    ];
+
     return (
       <Table
         dataSource={Array.isArray(prizes) ? prizes : []}
-        columns={columns}
+        columns={updatedColumns}
         pagination={false}
         rowKey={(item, idx) => idx}
         style={{ marginBottom: 20 }}
+        bordered
+        size="middle"
       />
     );
   };

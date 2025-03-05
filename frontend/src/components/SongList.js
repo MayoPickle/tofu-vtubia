@@ -1,17 +1,22 @@
 // SongList.js
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Table, Input, Button, Modal, Form, message, Space, Card, List, Typography } from 'antd';
+import { Table, Input, Button, Modal, Form, message, Space, Card, List, Typography, Tag, Select } from 'antd';
 import { SearchOutlined, PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import { useDeviceDetect } from '../utils/deviceDetector';
 
 const { Text, Title } = Typography;
+const { Option } = Select;
 
 function SongList() {
   const [songs, setSongs] = useState([]);
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const { isMobile } = useDeviceDetect();
+
+  // 标签相关状态
+  const [allTags, setAllTags] = useState([]);
+  const [selectedTags, setSelectedTags] = useState([]);
 
   // 是否管理员
   const [isAdmin, setIsAdmin] = useState(false);
@@ -41,7 +46,17 @@ function SongList() {
       // 从响应中提取songs数组
       const songsData = res.data.songs;
       // 确保数据是数组
-      setSongs(Array.isArray(songsData) ? songsData : []);
+      const songsArray = Array.isArray(songsData) ? songsData : [];
+      setSongs(songsArray);
+      
+      // 提取所有唯一标签
+      const tagsSet = new Set();
+      songsArray.forEach(song => {
+        if (song.tags) {
+          song.tags.split(',').forEach(tag => tagsSet.add(tag.trim()));
+        }
+      });
+      setAllTags(Array.from(tagsSet).sort());
     } catch (error) {
       console.error('Error fetching songs:', error);
       message.error('获取歌曲列表失败');
@@ -112,6 +127,7 @@ function SongList() {
       genre: record.genre,
       year: record.year,
       meta_data: record.meta_data,
+      tags: record.tags,
       link: record.link,
       description: record.description
     });
@@ -167,6 +183,23 @@ function SongList() {
     });
   };
 
+  // 处理标签筛选
+  const handleTagSelect = (selectedValues) => {
+    setSelectedTags(selectedValues);
+  };
+
+  // 获取筛选后的歌曲列表
+  const getFilteredSongs = () => {
+    if (selectedTags.length === 0) {
+      return songs;
+    }
+    return songs.filter(song => {
+      if (!song.tags) return false;
+      const songTags = song.tags.split(',').map(tag => tag.trim());
+      return selectedTags.some(tag => songTags.includes(tag));
+    });
+  };
+
   // ========================== 表格配置 ==========================
   const columns = [
     {
@@ -197,6 +230,12 @@ function SongList() {
       dataIndex: 'year',
       key: 'year',
       width: 80
+    },
+    {
+      title: '标签',
+      dataIndex: 'tags',
+      key: 'tags',
+      render: tags => renderSongTags(tags)
     },
     {
       title: 'Meta',
@@ -233,61 +272,146 @@ function SongList() {
     },
   ];
 
+  // ======== 渲染单个歌曲的标签 ========
+  const renderSongTags = (tags) => {
+    if (!tags) return null;
+    const tagArray = tags.split(',').map(tag => tag.trim());
+    return (
+      <Space size={[0, 4]} wrap>
+        {tagArray.map(tag => (
+          <Tag key={tag} color="pink" style={{ margin: '2px' }}>{tag}</Tag>
+        ))}
+      </Space>
+    );
+  };
+
   // ======== 渲染表单组件 ========
   const renderSongForm = (form, onFinish, modalVisible, setModalVisible, title) => (
     <Modal
       title={title}
       open={modalVisible}
-      onCancel={() => setModalVisible(false)}
       onOk={onFinish}
-      destroyOnClose
+      onCancel={() => setModalVisible(false)}
+      width={600}
     >
       <Form form={form} layout="vertical">
-        <Form.Item name="title" label="歌曲名" rules={[{ required: true, message: '请输入歌曲名' }]}>
-          <Input placeholder="输入歌曲名" />
+        <Form.Item
+          name="title"
+          label="歌曲名"
+          rules={[{ required: true, message: '请输入歌曲名' }]}
+        >
+          <Input placeholder="请输入歌曲名" />
         </Form.Item>
-        <Form.Item name="artist" label="艺术家" rules={[{ required: true, message: '请输入艺术家' }]}>
-          <Input placeholder="输入艺术家" />
+
+        <Form.Item
+          name="artist"
+          label="艺术家"
+          rules={[{ required: true, message: '请输入艺术家' }]}
+        >
+          <Input placeholder="请输入艺术家" />
         </Form.Item>
+
         <Form.Item name="album" label="专辑">
-          <Input placeholder="输入专辑" />
+          <Input placeholder="请输入专辑名" />
         </Form.Item>
+
         <Form.Item name="genre" label="风格">
-          <Input placeholder="输入风格" />
+          <Input placeholder="请输入音乐风格" />
         </Form.Item>
+
         <Form.Item name="year" label="年份">
-          <Input type="number" placeholder="输入年份（如：2021）" />
+          <Input type="number" placeholder="请输入发行年份" />
         </Form.Item>
-        <Form.Item name="meta_data" label="Meta">
-          <Input placeholder="输入Meta数据" />
+
+        <Form.Item name="meta_data" label="元数据">
+          <Input.TextArea placeholder="例如：JSON格式的歌曲额外信息" rows={2} />
         </Form.Item>
-        <Form.Item name="link" label="链接">
-          <Input placeholder="输入音乐链接" />
-        </Form.Item>
-        <Form.Item name="description" label="描述">
-          <Input.TextArea placeholder="输入歌曲描述" autoSize={{ minRows: 3, maxRows: 6 }} />
+
+        <Form.Item name="tags" label="标签">
+          <Input placeholder="多个标签用逗号分隔，如：流行,摇滚,经典" />
         </Form.Item>
       </Form>
     </Modal>
   );
 
-  // ======== 移动端 - 歌曲列表渲染 ========
+  // ======== 移动端 - 列表渲染 ========
   const renderMobileView = () => {
+    const filteredSongs = getFilteredSongs();
+
     return (
-      <div style={{ padding: '0 8px' }}>
-        <div style={{ marginBottom: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
-          <Input.Search 
-            placeholder="搜索歌曲" 
-            allowClear 
-            onSearch={onSearch} 
-            style={{ width: '100%' }} 
-          />
+      <>
+        <div style={{ padding: '8px' }}>
+          {/* 搜索栏和标签栏 */}
+          <div style={{ 
+            display: 'flex', 
+            marginBottom: '12px', 
+            width: '100%' 
+          }}>
+            {/* 搜索栏容器 */}
+            <div style={{ 
+              width: '65%', 
+              paddingRight: '4px',
+              boxSizing: 'border-box'
+            }}>
+              <Input
+                placeholder="搜索歌曲..."
+                prefix={<SearchOutlined />}
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                onPressEnter={() => onSearch(searchTerm)}
+                style={{ width: '100%' }}
+              />
+            </div>
+            
+            {/* 标签筛选容器 */}
+            <div style={{ 
+              width: '35%', 
+              display: 'flex', 
+              alignItems: 'center',
+              boxSizing: 'border-box',
+              paddingLeft: '4px'
+            }}>
+              <div style={{ 
+                width: selectedTags.length > 0 ? 'calc(100% - 36px)' : '100%',
+                boxSizing: 'border-box'
+              }}>
+                <Select
+                  mode="multiple"
+                  allowClear
+                  style={{ width: '100%' }}
+                  placeholder="标签筛选"
+                  value={selectedTags}
+                  onChange={handleTagSelect}
+                  options={allTags.map(tag => ({ label: tag, value: tag }))}
+                  showSearch
+                  optionFilterProp="label"
+                  filterOption={(input, option) =>
+                    (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+                  }
+                  maxTagCount={1}
+                  maxTagPlaceholder={(omittedValues) => `+${omittedValues.length}...`}
+                />
+              </div>
+              {selectedTags.length > 0 && (
+                <Button 
+                  size="small" 
+                  type="link" 
+                  onClick={() => setSelectedTags([])}
+                  style={{ padding: '0 2px', width: '36px' }}
+                >
+                  清除
+                </Button>
+              )}
+            </div>
+          </div>
           
+          {/* 添加按钮 */}
           {isAdmin && (
-            <Button 
-              type="primary" 
-              icon={<PlusOutlined />} 
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
               onClick={handleOpenAddModal}
+              style={{ marginBottom: 16, width: '100%' }}
             >
               添加歌曲
             </Button>
@@ -296,60 +420,159 @@ function SongList() {
 
         <List
           loading={loading}
-          dataSource={songs}
-          renderItem={(item) => (
-            <List.Item
+          dataSource={filteredSongs}
+          renderItem={item => (
+            <Card
               key={item.id}
+              size="small"
+              style={{ margin: '8px 16px' }}
+              title={
+                <div>
+                  <Text strong>{item.title}</Text>
+                  <Text type="secondary" style={{ marginLeft: 8 }}>{item.artist}</Text>
+                </div>
+              }
               actions={isAdmin ? [
-                <Button 
-                  icon={<EditOutlined />} 
-                  size="small" 
-                  onClick={() => handleOpenEditModal(item)}
-                />,
-                <Button 
-                  icon={<DeleteOutlined />} 
-                  size="small" 
-                  danger 
-                  onClick={() => handleDeleteSong(item.id)}
-                />
+                <EditOutlined key="edit" onClick={() => handleOpenEditModal(item)} />,
+                <DeleteOutlined key="delete" onClick={() => handleDeleteSong(item.id)} />
               ] : []}
             >
-              <List.Item.Meta
-                title={<a href={item.link} target="_blank" rel="noopener noreferrer">{item.title}</a>}
-                description={
-                  <div>
-                    <div><Text strong>艺术家:</Text> {item.artist}</div>
-                    {item.album && <div><Text strong>专辑:</Text> {item.album}</div>}
-                    {item.genre && <div><Text strong>风格:</Text> {item.genre}</div>}
-                    {item.year && <div><Text strong>年份:</Text> {item.year}</div>}
-                    {item.meta_data && <div><Text strong>Meta:</Text> {item.meta_data}</div>}
-                    {item.description && <div><Text strong>描述:</Text> {item.description}</div>}
-                  </div>
-                }
-              />
-            </List.Item>
+              <div style={{ marginBottom: 8 }}>
+                {item.album && <Text style={{ marginRight: 8 }}>专辑: {item.album}</Text>}
+                {item.year && <Text>年份: {item.year}</Text>}
+              </div>
+              {item.tags && (
+                <div style={{ marginTop: 8 }}>
+                  {renderSongTags(item.tags)}
+                </div>
+              )}
+            </Card>
           )}
         />
-      </div>
+        
+        {renderSongForm(addForm, handleAddSong, addModalVisible, setAddModalVisible, '添加歌曲')}
+        {renderSongForm(editForm, handleEditSong, editModalVisible, setEditModalVisible, '编辑歌曲')}
+      </>
     );
   };
 
   // ======== PC端 - 表格渲染 ========
   const renderDesktopView = () => {
+    // 根据是否是管理员来调整列宽
+    const titleWidth = isAdmin ? '20%' : '25%';
+    const artistWidth = isAdmin ? '15%' : '20%';
+    const albumWidth = isAdmin ? '20%' : '20%';
+    const yearWidth = isAdmin ? '10%' : '10%';
+    const tagsWidth = isAdmin ? '25%' : '25%';
+    
+    const columns = [
+      {
+        title: '歌曲名',
+        dataIndex: 'title',
+        key: 'title',
+        width: titleWidth,
+        sorter: (a, b) => a.title.localeCompare(b.title),
+      },
+      {
+        title: '艺术家',
+        dataIndex: 'artist',
+        key: 'artist',
+        width: artistWidth,
+        sorter: (a, b) => a.artist.localeCompare(b.artist),
+      },
+      {
+        title: '专辑',
+        dataIndex: 'album',
+        key: 'album',
+        width: albumWidth,
+      },
+      {
+        title: '年份',
+        dataIndex: 'year',
+        key: 'year',
+        width: yearWidth,
+        sorter: (a, b) => (a.year || 0) - (b.year || 0),
+      },
+      {
+        title: '标签',
+        dataIndex: 'tags',
+        key: 'tags',
+        width: tagsWidth,
+        render: tags => renderSongTags(tags)
+      },
+      // 只有管理员才显示操作列
+      ...(isAdmin ? [{
+        title: '操作',
+        key: 'action',
+        width: '10%',
+        render: (_, record) => (
+          <Space size="middle">
+            <Button
+              type="primary"
+              size="small"
+              icon={<EditOutlined />}
+              onClick={() => handleOpenEditModal(record)}
+            >
+              编辑
+            </Button>
+            <Button
+              type="primary"
+              danger
+              size="small"
+              icon={<DeleteOutlined />}
+              onClick={() => handleDeleteSong(record.id)}
+            >
+              删除
+            </Button>
+          </Space>
+        ),
+      }] : [])
+    ];
+
+    const filteredSongs = getFilteredSongs();
+
     return (
-      <div style={{ padding: '24px' }}>
-        <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between' }}>
-          <Input.Search 
-            placeholder="搜索歌曲或歌手..." 
-            allowClear 
-            onSearch={onSearch} 
-            style={{ width: 300 }} 
-          />
-          
+      <>
+        <div style={{ marginBottom: 16, display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div style={{ display: 'flex', flex: 1, gap: '12px', alignItems: 'center' }}>
+            <Input
+              placeholder="搜索歌曲..."
+              prefix={<SearchOutlined />}
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              onPressEnter={() => onSearch(searchTerm)}
+              style={{ width: '320px' }}
+            />
+            <Select
+              mode="multiple"
+              allowClear
+              style={{ width: '150px' }}
+              placeholder="标签筛选"
+              value={selectedTags}
+              onChange={handleTagSelect}
+              options={allTags.map(tag => ({ label: tag, value: tag }))}
+              showSearch
+              optionFilterProp="label"
+              filterOption={(input, option) =>
+                (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+              }
+              maxTagCount={2}
+              maxTagPlaceholder={(omittedValues) => `+${omittedValues.length}...`}
+            />
+            {selectedTags.length > 0 && (
+              <Button 
+                size="small" 
+                type="link" 
+                onClick={() => setSelectedTags([])}
+              >
+                清除筛选
+              </Button>
+            )}
+          </div>
           {isAdmin && (
-            <Button 
-              type="primary" 
-              icon={<PlusOutlined />} 
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
               onClick={handleOpenAddModal}
             >
               添加歌曲
@@ -357,18 +580,16 @@ function SongList() {
           )}
         </div>
 
-        <Table 
-          columns={columns} 
-          dataSource={songs} 
-          rowKey="id" 
+        <Table
+          columns={columns}
+          dataSource={filteredSongs}
+          rowKey="id"
           loading={loading}
-          pagination={{
-            pageSize: 10,
-            showSizeChanger: true,
-            showQuickJumper: true,
-          }}
         />
-      </div>
+        
+        {renderSongForm(addForm, handleAddSong, addModalVisible, setAddModalVisible, '添加歌曲')}
+        {renderSongForm(editForm, handleEditSong, editModalVisible, setEditModalVisible, '编辑歌曲')}
+      </>
     );
   };
 
@@ -379,12 +600,6 @@ function SongList() {
       </Title>
 
       {isMobile ? renderMobileView() : renderDesktopView()}
-
-      {/* 新增歌曲对话框 */}
-      {renderSongForm(addForm, handleAddSong, addModalVisible, setAddModalVisible, '添加歌曲')}
-      
-      {/* 编辑歌曲对话框 */}
-      {renderSongForm(editForm, handleEditSong, editModalVisible, setEditModalVisible, '编辑歌曲')}
     </div>
   );
 }

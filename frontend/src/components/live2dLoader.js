@@ -152,7 +152,7 @@ export function loadLive2DScripts() {
       } catch (e) {
         console.log('参数控制出错:', e);
       }
-    }, 100);
+    }, 500);
     
     document.addEventListener('mousemove', handleMouseMove);
     

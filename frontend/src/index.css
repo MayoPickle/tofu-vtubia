@@ -66,39 +66,118 @@ a:hover {
   color: white !important;
 }
 
+/* 按钮基础样式 */
+.ant-btn {
+  transition: all 0.3s;
+}
+
 /* 全局样式覆盖 */
-/* 按钮 */
+/* 主要按钮 */
 .ant-btn-primary {
   background-color: var(--primary-color);
   border-color: var(--primary-color);
+  color: white !important;
 }
 
 .ant-btn-primary:hover,
-.ant-btn-primary:focus {
-  background-color: var(--accent-color);
-  border-color: var(--accent-color);
+.ant-btn-primary:focus,
+.ant-btn-primary:active,
+.ant-btn-primary.active {
+  background-color: var(--accent-color) !important;
+  border-color: var(--accent-color) !important;
+  box-shadow: 0 0 0 2px rgba(255, 92, 141, 0.2) !important;
+  color: white !important;
+}
+
+/* 按钮图标样式，确保图标颜色与文字颜色匹配 */
+.ant-btn-primary .anticon {
+  color: white !important;
+}
+
+/* 普通按钮默认状态 */
+.ant-btn-default,
+.ant-btn-dashed {
+  color: rgba(0, 0, 0, 0.88) !important; /* Ant Design 默认颜色 */
+  background-color: #fff !important;
+}
+
+/* 普通按钮只在高亮状态下边框颜色改变，不改变背景色 */
+.ant-btn-default:hover,
+.ant-btn-default:focus,
+.ant-btn-default:active,
+.ant-btn-default.active,
+.ant-btn-dashed:hover,
+.ant-btn-dashed:focus,
+.ant-btn-dashed:active,
+.ant-btn-dashed.active {
+  color: var(--accent-color) !important;
+  border-color: var(--accent-color) !important;
+  box-shadow: 0 0 0 2px rgba(255, 92, 141, 0.2) !important;
+  background-color: #fff !important; /* 保持白色背景 */
+}
+
+/* 按钮图标样式，确保图标颜色与文字颜色匹配 */
+.ant-btn-default:hover .anticon,
+.ant-btn-default:focus .anticon,
+.ant-btn-default:active .anticon,
+.ant-btn-default.active .anticon,
+.ant-btn-dashed:hover .anticon,
+.ant-btn-dashed:focus .anticon,
+.ant-btn-dashed:active .anticon,
+.ant-btn-dashed.active .anticon {
+  color: var(--accent-color) !important;
+}
+
+/* 文本按钮特殊处理 */
+.ant-btn-link {
+  color: var(--accent-color) !important;
+  background-color: transparent !important;
+}
+
+.ant-btn-link:hover,
+.ant-btn-link:focus,
+.ant-btn-link:active,
+.ant-btn-link.active {
+  color: var(--primary-color) !important;
+  background-color: transparent !important;
+  text-decoration: underline;
+}
+
+/* 按钮图标样式，确保图标颜色与文字颜色匹配 */
+.ant-btn-link .anticon {
+  color: var(--accent-color) !important;
+}
+
+.ant-btn-link:hover .anticon,
+.ant-btn-link:focus .anticon,
+.ant-btn-link:active .anticon,
+.ant-btn-link.active .anticon {
+  color: var(--primary-color) !important;
 }
 
 /* 危险按钮样式 */
 .ant-btn-dangerous {
-  background-color: #7928CA !important;
-  border-color: #7928CA !important;
+  background-color: #ff8121 !important; /* 胡萝卜色 */
+  border-color: #ff8121 !important;
   color: white !important;
 }
 
-.ant-btn-dangerous:hover {
-  background-color: #9153d8 !important;
-  border-color: #9153d8 !important;
+.ant-btn-dangerous:hover,
+.ant-btn-dangerous:focus,
+.ant-btn-dangerous:active {
+  background-color: #e6700a !important; /* 深一点的胡萝卜色 */
+  border-color: #e6700a !important;
+  color: white !important;
 }
 
 /* 下拉菜单中的危险项样式 */
 .ant-dropdown-menu-item-danger {
-  color: #7928CA !important;
+  color: #ff8121 !important; /* 胡萝卜色 */
   font-weight: bold;
 }
 
 .ant-dropdown-menu-item-danger:hover {
-  background-color: rgba(121, 40, 202, 0.1) !important;
+  background-color: rgba(255, 129, 33, 0.1) !important; /* 淡胡萝卜色背景 */
 }
 
 /* 导航菜单 */
@@ -255,5 +334,55 @@ a:hover {
     --secondary-color: #ff3372;
     --accent-color: #ff85a2;
     --light-color: #412a36;
+  }
+}
+
+/* Select多选下拉框样式 */
+.ant-select-multiple .ant-select-selection-item {
+  background-color: var(--light-color) !important;
+  border-color: var(--secondary-color) !important;
+  color: var(--accent-color) !important;
+}
+
+.ant-select-multiple .ant-select-selection-item-remove {
+  color: var(--accent-color) !important;
+}
+
+.ant-select-multiple .ant-select-selection-item-remove:hover {
+  color: var(--primary-color) !important;
+}
+
+.ant-select-dropdown .ant-select-item-option-selected:not(.ant-select-item-option-disabled) {
+  background-color: var(--light-color) !important;
+  color: var(--accent-color) !important;
+}
+
+.ant-select-dropdown .ant-select-item-option-active:not(.ant-select-item-option-disabled) {
+  background-color: var(--light-color) !important;
+}
+
+.ant-select-focused:not(.ant-select-disabled).ant-select:not(.ant-select-customize-input) .ant-select-selector {
+  border-color: var(--accent-color) !important;
+  box-shadow: 0 0 0 2px rgba(255, 92, 141, 0.2) !important;
+}
+
+.ant-select:not(.ant-select-disabled):hover .ant-select-selector {
+  border-color: var(--accent-color) !important;
+}
+
+/* 超小屏幕设备优化 */
+@media screen and (max-width: 360px) {
+  .ant-select-selection-item {
+    max-width: 60px !important;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  
+  .ant-select-multiple .ant-select-selection-placeholder {
+    font-size: 12px;
+  }
+  
+  .ant-select-selection-overflow {
+    flex-wrap: nowrap !important;
   }
 }

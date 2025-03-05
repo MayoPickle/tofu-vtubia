@@ -51,7 +51,7 @@ function LotteryWheel({ isLoggedIn }) {
       method: 'POST',
       credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(prizes),
+      body: JSON.stringify({ prizes }),
     })
       .then((res) => {
         if (!res.ok) throw new Error('保存奖品信息失败');
@@ -90,54 +90,151 @@ function LotteryWheel({ isLoggedIn }) {
   // ============================
   return (
     <div style={{ 
-      padding: isMobile ? '12px 8px' : '20px',
+      padding: isMobile ? '16px 12px' : '24px',
       maxWidth: '1200px',
-      margin: '0 auto'
+      margin: '0 auto',
+      backgroundColor: '#f9f9f9',
+      borderRadius: '12px',
+      boxShadow: '0 4px 12px rgba(0,0,0,0.05)'
     }}>
-      <Title level={isMobile ? 3 : 2} style={{ marginBottom: isMobile ? 12 : 20, textAlign: 'center' }}>
-        抽奖转盘
+      <Title level={isMobile ? 3 : 2} style={{ 
+        marginBottom: isMobile ? 16 : 24, 
+        textAlign: 'center',
+        color: '#333',
+        fontWeight: 600
+      }}>
+        幸运抽奖转盘
       </Title>
 
-      <Space style={{ 
-        marginBottom: isMobile ? 8 : 10,
-        display: 'flex',
-        flexDirection: isMobile ? 'column' : 'row',
-        width: isMobile ? '100%' : 'auto'
-      }}>
-        <Button 
-          type="primary" 
-          onClick={handleAddPrize}
-          style={{ width: isMobile ? '100%' : 'auto' }}
-        >
-          添加奖品
-        </Button>
-        {isLoggedIn && (
-          <Button
-            onClick={handleSavePrizes}
-            style={{ width: isMobile ? '100%' : 'auto' }}
-          >
-            保存奖品
-          </Button>
-        )}
-      </Space>
+      {/* 桌面端布局 */}
+      {!isMobile && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+          {/* 上部分：奖品编辑区域 */}
+          <div style={{ 
+            backgroundColor: '#fff',
+            padding: '20px',
+            borderRadius: '8px',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.08)'
+          }}>
+            <div style={{ 
+              display: 'flex', 
+              justifyContent: 'space-between',
+              marginBottom: '16px'
+            }}>
+              <Button 
+                type="primary" 
+                onClick={handleAddPrize}
+                style={{ backgroundColor: '#ff85c0', borderColor: '#ff85c0' }}
+              >
+                添加奖品
+              </Button>
+              {isLoggedIn && (
+                <Button
+                  onClick={handleSavePrizes}
+                  type="default"
+                  style={{ borderColor: '#ff85c0', color: '#ff85c0' }}
+                >
+                  保存奖品
+                </Button>
+              )}
+            </div>
+            <PrizesTable prizes={prizes} setPrizes={setPrizes} />
+          </div>
+          
+          {/* 下部分：转盘和结果区域（左右布局） */}
+          <div style={{ 
+            display: 'flex',
+            gap: '30px'
+          }}>
+            {/* 左边：转盘 */}
+            <div style={{ 
+              width: '60%',
+              backgroundColor: '#fff',
+              padding: '20px',
+              borderRadius: '8px',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.08)'
+            }}>
+              <SpinWheel prizes={prizes} result={result} setResult={setResult} />
+            </div>
+            
+            {/* 右边：结果展示 */}
+            <div style={{ 
+              width: '40%',
+              backgroundColor: '#fff',
+              padding: '20px',
+              borderRadius: '8px',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+              display: 'flex',
+              alignItems: 'center'
+            }}>
+              <LotteryResult result={result} prizes={prizes} />
+            </div>
+          </div>
+        </div>
+      )}
 
-      {/* 奖品表格 */}
-      <PrizesTable prizes={prizes} setPrizes={setPrizes} />
-
-      {/* 转盘 + 抽奖结果 - 移动端垂直排列，桌面端水平排列 */}
-      <div style={{ 
-        display: 'flex', 
-        flexDirection: isMobile ? 'column' : 'row', 
-        gap: isMobile ? 16 : 40, 
-        marginTop: isMobile ? 12 : 20,
-        alignItems: 'center'
-      }}>
-        <SpinWheel prizes={prizes} result={result} setResult={setResult} />
-        
-        {isMobile && <Divider style={{ margin: '12px 0' }} />}
-        
-        <LotteryResult result={result} />
-      </div>
+      {/* 移动端布局：垂直排列所有元素 */}
+      {isMobile && (
+        <div style={{ 
+          display: 'flex', 
+          flexDirection: 'column',
+          gap: '20px'
+        }}>
+          {/* 奖品编辑区域 */}
+          <div style={{ 
+            backgroundColor: '#fff',
+            padding: '16px',
+            borderRadius: '8px',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.08)'
+          }}>
+            <Space style={{ 
+              marginBottom: '16px',
+              display: 'flex',
+              width: '100%',
+              justifyContent: 'space-between'
+            }}>
+              <Button 
+                type="primary" 
+                onClick={handleAddPrize}
+                block
+                style={{ flex: 1, backgroundColor: '#ff85c0', borderColor: '#ff85c0' }}
+              >
+                添加奖品
+              </Button>
+              {isLoggedIn && (
+                <Button
+                  onClick={handleSavePrizes}
+                  style={{ flex: 1, borderColor: '#ff85c0', color: '#ff85c0' }}
+                  block
+                >
+                  保存奖品
+                </Button>
+              )}
+            </Space>
+            <PrizesTable prizes={prizes} setPrizes={setPrizes} />
+          </div>
+          
+          {/* 转盘 */}
+          <div style={{ 
+            backgroundColor: '#fff',
+            padding: '16px',
+            borderRadius: '8px',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.08)'
+          }}>
+            <SpinWheel prizes={prizes} result={result} setResult={setResult} />
+          </div>
+          
+          {/* 结果展示 */}
+          <div style={{ 
+            backgroundColor: '#fff',
+            padding: '16px',
+            borderRadius: '8px',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.08)'
+          }}>
+            <LotteryResult result={result} prizes={prizes} />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

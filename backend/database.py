@@ -60,7 +60,8 @@ class Database:
             album TEXT,
             genre TEXT,
             year INTEGER,
-            meta_data TEXT
+            meta_data TEXT,
+            tags TEXT
         )
         """)
         conn.commit()
@@ -115,16 +116,21 @@ class Database:
         if count == 0:
             # 插入示例歌曲数据
             example_songs = [
-                ("Shape of You", "Ed Sheeran", "Divide", "Pop", 2017, '{"duration": "3:53", "producer": "Steve Mac"}'),
-                ("Billie Jean", "Michael Jackson", "Thriller", "Pop", 1982, '{"duration": "4:54"}'),
-                ("Hotel California", "Eagles", "Hotel California", "Rock", 1977, '{"duration": "6:30"}'),
-                ("Imagine", "John Lennon", "Imagine", "Rock", 1971, '{"duration": "3:07"}'),
-                ("Lose Yourself", "Eminem", "8 Mile Soundtrack", "Hip-Hop", 2002, '{"duration": "5:20"}'),
+                ("Shape of You", "Ed Sheeran", "Divide", "Pop", 2017, '{"duration": "3:53", "producer": "Steve Mac"}', "流行,英文,热门,电子"),
+                ("Billie Jean", "Michael Jackson", "Thriller", "Pop", 1982, '{"duration": "4:54"}', "经典,流行,舞曲,节奏布鲁斯"),
+                ("Hotel California", "Eagles", "Hotel California", "Rock", 1977, '{"duration": "6:30"}', "经典,摇滚,吉他,传奇"),
+                ("Imagine", "John Lennon", "Imagine", "Rock", 1971, '{"duration": "3:07"}', "经典,摇滚,和平,抒情"),
+                ("Lose Yourself", "Eminem", "8 Mile Soundtrack", "Hip-Hop", 2002, '{"duration": "5:20"}', "说唱,激励,电影原声"),
+                ("青花瓷", "周杰伦", "我很忙", "C-Pop", 2007, '{"duration": "3:59"}', "华语,古风,流行,国风"),
+                ("漂洋过海来看你", "李宗盛", "山丘", "Folk", 1989, '{"duration": "5:45"}', "华语,民谣,经典,情歌"),
+                ("水星记", "郭顶", "飞行器的执行周期", "Alternative", 2016, '{"duration": "4:09"}', "华语,流行,小众,治愈"),
+                ("纸短情长", "烟把儿", "纸短情长", "Folk", 2018, '{"duration": "3:24"}', "华语,民谣,情歌,网络"),
+                ("春夏秋冬", "张国荣", "Summer Romance", "C-Pop", 1988, '{"duration": "4:16"}', "华语,经典,粤语,流行")
             ]
             
             cur.executemany("""
-            INSERT INTO songs (title, artist, album, genre, year, meta_data)
-            VALUES (?, ?, ?, ?, ?, ?)
+            INSERT INTO songs (title, artist, album, genre, year, meta_data, tags)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
             """, example_songs)
             conn.commit()
         

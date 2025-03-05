@@ -65,7 +65,7 @@ function SpinWheel({ prizes, result, setResult }) {
 
     // 指针
     ctx.save();
-    ctx.fillStyle = 'red';
+    ctx.fillStyle = '#ff85c0';
     ctx.beginPath();
     ctx.moveTo(centerX - 10, centerY - radius - 10);
     ctx.lineTo(centerX + 10, centerY - radius - 10);
@@ -201,25 +201,55 @@ function SpinWheel({ prizes, result, setResult }) {
         type="primary" 
         onClick={handleSpin} 
         style={{ 
-          marginBottom: isMobile ? 16 : 20,
-          width: isMobile ? '100%' : 'auto',
-          height: isMobile ? '40px' : '32px',
-          fontSize: isMobile ? '16px' : '14px'
+          marginBottom: isMobile ? 20 : 24,
+          width: isMobile ? '100%' : '180px',
+          height: isMobile ? '44px' : '40px',
+          fontSize: isMobile ? '16px' : '15px',
+          borderRadius: '20px',
+          background: '#ff85c0',
+          borderColor: '#ff85c0',
+          boxShadow: '0 4px 10px rgba(255, 133, 192, 0.3)'
         }}
+        size="large"
+        disabled={isSpinningRef.current}
       >
-        开始抽奖
+        {isSpinningRef.current ? '抽奖中...' : '开始抽奖'}
       </Button>
-      <canvas
-        ref={canvasRef}
-        width={400}
-        height={400}
-        style={{ 
-          border: '1px dashed #ccc', 
+      
+      <div style={{
+        position: 'relative',
+        width: 'fit-content',
+        margin: '0 auto'
+      }}>
+        <canvas
+          ref={canvasRef}
+          width={400}
+          height={400}
+          style={{ 
+            borderRadius: '50%',
+            maxWidth: '100%',
+            height: 'auto',
+            boxShadow: '0 6px 16px rgba(0,0,0,0.12)',
+            transition: 'transform 0.3s ease',
+            transform: isSpinningRef.current ? 'scale(1.02)' : 'scale(1)'
+          }}
+        />
+        
+        {/* 转盘中心装饰 */}
+        <div style={{
+          position: 'absolute',
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
+          width: '30px',
+          height: '30px',
           borderRadius: '50%',
-          maxWidth: '100%',
-          height: 'auto'
-        }}
-      />
+          backgroundColor: '#fff',
+          border: '3px solid #ff85c0',
+          boxShadow: '0 0 0 3px rgba(255, 133, 192, 0.2)',
+          zIndex: 2
+        }} />
+      </div>
     </div>
   );
 }

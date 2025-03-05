@@ -93,6 +93,7 @@ function AdminAuth() {
       const res = await axios.post('/api/register', {
         username: values.username,
         password: hashedPassword,
+        password_confirm: hashedPassword,
         bilibili_uid: values.bilibili_uid || null
       });
   
@@ -172,40 +173,64 @@ function AdminAuth() {
         {
           key: 'username',
           label: (
-            <div style={{ padding: '6px 0' }}>
+            <div style={{ padding: '8px 0' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <Avatar icon={<UserOutlined />} />
-                <Text strong>{username}</Text>
+                <Text strong style={{ fontSize: '16px' }}>{username}</Text>
               </div>
-              {isAdmin && (
-                <div style={{ marginTop: 4 }}>
-                  <Text type="success">管理员身份</Text>
-                </div>
-              )}
             </div>
           ),
           disabled: true,
         },
         {
           type: 'divider',
+          style: { margin: '8px 0' }
         }
       ];
       
       if (isAdmin) {
         items.push({
+          key: 'admin-status',
+          label: (
+            <div style={{ padding: '4px 0', display: 'flex', alignItems: 'center' }}>
+              <div style={{ 
+                width: '8px', 
+                height: '8px', 
+                borderRadius: '50%', 
+                backgroundColor: '#52c41a', 
+                marginRight: '8px' 
+              }}></div>
+              <Text style={{ color: '#52c41a' }}>管理员</Text>
+            </div>
+          ),
+          disabled: true,
+        });
+        
+        items.push({
           key: 'admin',
-          label: <Link to="/admin/users" style={{ color: 'var(--accent-color)' }}>用户管理</Link>,
+          label: (
+            <div style={{ padding: '4px 0' }}>
+              <Link to="/admin/users" style={{ color: 'var(--accent-color)' }}>用户管理</Link>
+            </div>
+          ),
+        });
+        
+        items.push({
+          type: 'divider',
+          style: { margin: '8px 0' }
         });
       }
       
       items.push({
         key: 'logout',
         label: (
-          <a onClick={handleLogout} style={{ color: 'var(--accent-color)', fontWeight: 'bold' }}>
-            退出登录
-          </a>
+          <div style={{ padding: '4px 0' }}>
+            <a onClick={handleLogout} style={{ color: '#ff4d4f', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <LogoutOutlined />
+              <span>退出登录</span>
+            </a>
+          </div>
         ),
-        danger: true,
       });
       
       return (
@@ -214,9 +239,31 @@ function AdminAuth() {
           placement="bottomRight"
           trigger={['click']}
         >
-          <div style={{ cursor: 'pointer' }}>
+          <div style={{ 
+            cursor: 'pointer', 
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: '8px', 
+            padding: '4px 8px', 
+            borderRadius: '4px',
+            transition: 'background 0.3s',
+          }} 
+          className="user-dropdown-trigger"
+          onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'}
+          onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+          >
             <Avatar icon={<UserOutlined />} />
-            <span style={{ marginLeft: 8, color: '#fff' }}>{username}</span>
+            <span style={{ color: '#fff' }}>{username}</span>
+            {isAdmin && (
+              <div style={{ 
+                width: '6px', 
+                height: '6px', 
+                borderRadius: '50%', 
+                backgroundColor: '#52c41a', 
+                marginLeft: '-4px',
+                marginTop: '-12px'
+              }}></div>
+            )}
           </div>
         </Dropdown>
       );
