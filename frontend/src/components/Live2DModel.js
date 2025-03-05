@@ -7,13 +7,13 @@ const LIVE2D_ENABLED_KEY = 'live2d_enabled';
 
 const Live2DModel = () => {
   const { isMobile } = useDeviceDetect();
-  // 从localStorage读取用户偏好设置，默认移动设备不启用，桌面设备启用
+  // 从localStorage读取用户偏好设置，默认所有设备都启用
   const [isEnabled, setIsEnabled] = useState(() => {
     const savedPreference = localStorage.getItem(LIVE2D_ENABLED_KEY);
-    // 如果有保存的偏好设置，使用保存的值；否则根据设备类型设置默认值
+    // 如果有保存的偏好设置，使用保存的值；否则默认为true（启用）
     return savedPreference !== null 
       ? savedPreference === 'true' 
-      : !isMobile; // 默认移动设备不启用，桌面设备启用
+      : true; // 修改：默认所有设备都启用
   });
 
   // 切换Live2D模型的显示状态
