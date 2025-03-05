@@ -16,19 +16,19 @@ const levels = [
   {
     label: '强袭',
     trigger: '观测站强袭+密码',
-    exponent: 4,
+    exponent: 3,
     comment: '十倍',
   },
   {
     label: '泰坦',
     trigger: '观测站泰坦+密码',
-    exponent: 8,
+    exponent: 4,
     comment: '百倍',
   },
   {
     label: '全境',
     trigger: '观测站全境+密码',
-    exponent: 16,
+    exponent: 5,
     comment: 'ALL IN',
   },
 ];
