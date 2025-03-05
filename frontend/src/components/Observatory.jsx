@@ -9,7 +9,7 @@ const { Title, Paragraph, Text } = Typography;
 const levels = [
   {
     label: '幽灵',
-    trigger: '观测站+密码',
+    trigger: '观测站幽灵+密码',
     exponent: 2,
     comment: '一倍',
   },

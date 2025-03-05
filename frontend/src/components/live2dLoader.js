@@ -16,10 +16,17 @@ export function loadLive2DScripts() {
       });
     }
   
+    // 首先加载基本的PIXI.js
     return loadScript('https://cdn.jsdelivr.net/npm/pixi.js@5.3.3/dist/pixi.min.js')
+      // 加载Cubism 2运行时 - 必须先加载
+      .then(() => loadScript('/assets/live2d/live2d.min.js'))
+      // 加载L2Dwidget
       .then(() => loadScript('https://cdn.jsdelivr.net/npm/live2d-widget@3.1.4/lib/L2Dwidget.min.js'))
+      // 加载Cubism 4运行时
       .then(() => loadScript('https://cubism.live2d.com/sdk-web/cubismcore/live2dcubismcore.min.js'))
+      // 加载Cubism 4支持
       .then(() => loadScript('https://cdn.jsdelivr.net/npm/pixi-live2d-display@0.3.1/dist/cubism4.min.js'))
+      // 加载主索引文件 - 需要在Cubism 2和Cubism 4都加载完毕后加载
       .then(() => loadScript('https://cdn.jsdelivr.net/npm/pixi-live2d-display@0.3.1/dist/index.min.js'))
       .then(() => {
         console.log('所有 Live2D 相关库加载完成');
@@ -48,13 +55,22 @@ export function loadLive2DScripts() {
     const containerWidth = container.clientWidth;
     const containerHeight = container.clientHeight;
     
+    // 确保先清理之前的可能存在的PIXI应用和WebGL上下文
+    destroyLive2DModel();
+    
     const app = new PIXI.Application({
       width: containerWidth,
       height: containerHeight,
       transparent: true,
       autoStart: true,
       resolution: window.devicePixelRatio || 1, // 支持高DPI显示
+      powerPreference: 'high-performance', // 提高性能
+      antialias: true, // 抗锯齿
+      preserveDrawingBuffer: false // 提高性能
     });
+
+    // 保存应用实例到window对象以便后续清理
+    window.live2dApp = app;
 
     container.appendChild(app.view);
     
@@ -80,17 +96,56 @@ export function loadLive2DScripts() {
         adjustModelPosition(model, containerWidth, containerHeight, isMobile);
         setupModelInteraction(model);
 
+        // 保存模型到window对象以便后续清理
+        window.live2dModel = model;
+
         // 监听窗口大小变化
-        window.addEventListener('resize', () => {
-          const newWidth = container.clientWidth;
-          const newHeight = container.clientHeight;
-          app.renderer.resize(newWidth, newHeight);
-          adjustModelPosition(model, newWidth, newHeight, isMobile);
-        });
+        window.addEventListener('resize', handleResize);
       })
       .catch(error => {
         console.error('Live2D 模型加载失败:', error);
       });
+      
+    // 分离resize事件处理函数，方便后续移除
+    function handleResize() {
+      if (!window.live2dModel || !window.live2dApp) return;
+      
+      const newWidth = container.clientWidth;
+      const newHeight = container.clientHeight;
+      window.live2dApp.renderer.resize(newWidth, newHeight);
+      adjustModelPosition(window.live2dModel, newWidth, newHeight, isMobile);
+    }
+    
+    // 保存事件处理器以便后续清理
+    window.live2dResizeHandler = handleResize;
+  }
+
+  // 添加清理函数，避免内存泄漏和WebGL上下文冲突
+  export function destroyLive2DModel() {
+    // 清理resize事件
+    if (window.live2dResizeHandler) {
+      window.removeEventListener('resize', window.live2dResizeHandler);
+      window.live2dResizeHandler = null;
+    }
+    
+    // 清理模型
+    if (window.live2dModel) {
+      if (window.live2dModel.parent) {
+        window.live2dModel.parent.removeChild(window.live2dModel);
+      }
+      window.live2dModel.destroy(true);
+      window.live2dModel = null;
+    }
+    
+    // 清理PIXI应用
+    if (window.live2dApp) {
+      const container = document.getElementById('live2d-container');
+      if (container && container.contains(window.live2dApp.view)) {
+        container.removeChild(window.live2dApp.view);
+      }
+      window.live2dApp.destroy(true, { children: true, texture: true, baseTexture: true });
+      window.live2dApp = null;
+    }
   }
 
   function adjustModelPosition(model, containerWidth, containerHeight, isMobile) {

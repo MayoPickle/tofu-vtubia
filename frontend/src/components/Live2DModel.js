@@ -1,12 +1,25 @@
 import React, { useEffect } from 'react';
-import { loadLive2DScripts, initLive2DModel } from './live2dLoader';
+import { loadLive2DScripts, initLive2DModel, destroyLive2DModel } from './live2dLoader';
 import { useDeviceDetect } from '../utils/deviceDetector';
 
 const Live2DModel = () => {
   const { isMobile } = useDeviceDetect();
 
   useEffect(() => {
-    loadLive2DScripts().then(() => initLive2DModel());
+    // 加载脚本并初始化模型
+    let isLoaded = false;
+    
+    loadLive2DScripts().then(() => {
+      isLoaded = true;
+      initLive2DModel();
+    });
+    
+    // 清理函数，组件卸载时执行
+    return () => {
+      if (isLoaded) {
+        destroyLive2DModel();
+      }
+    };
   }, []);
 
   const containerStyle = {

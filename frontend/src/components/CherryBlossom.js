@@ -6,7 +6,7 @@ function CherryBlossom() {
   
   useEffect(() => {
     const container = containerRef.current;
-    const maxPetals = 20; // 减少花瓣最大数量
+    const maxPetals = 10; // 将最大数量从20减少到10
     const petalsArray = [];
     
     // 创建樱花花瓣
@@ -15,12 +15,12 @@ function CherryBlossom() {
       petal.className = 'petal';
       
       // 随机样式
-      const size = 8 + Math.random() * 8; // 减小尺寸范围
+      const size = 6 + Math.random() * 6; // 进一步减小尺寸范围
       const rotation = Math.random() * 360;
       const xPos = Math.random() * 100; // 横向位置百分比
-      const fallDuration = 10 + Math.random() * 15; // 增加下落时间，使其更慢
-      const swayDuration = 3 + Math.random() * 5; // 增加摇摆时间
-      const delay = Math.random() * 6; // 延迟随机性
+      const fallDuration = 12 + Math.random() * 15; // 增加下落时间，使其更慢
+      const swayDuration = 4 + Math.random() * 5; // 增加摇摆时间
+      const delay = Math.random() * 8; // 增加延迟随机性
       
       // 风向随机性
       const windDirection = Math.random() > 0.5 ? 1 : -1;
@@ -39,7 +39,7 @@ function CherryBlossom() {
       petal.classList.add(`petal-type-${petalType}`);
       
       // 添加轻微的缩放变化
-      const scale = 0.7 + Math.random() * 0.3; // 整体缩小
+      const scale = 0.6 + Math.random() * 0.3; // 整体缩小
       petal.style.transform += ` scale(${scale})`;
       
       container.appendChild(petal);
@@ -58,8 +58,8 @@ function CherryBlossom() {
     };
     
     // 初始创建一批花瓣，减少初始数量
-    for (let i = 0; i < maxPetals / 4; i++) {
-      setTimeout(createPetal, i * 300);
+    for (let i = 0; i < maxPetals / 5; i++) { // 从maxPetals/4减少到maxPetals/5
+      setTimeout(createPetal, i * 500); // 增加间隔时间从300到500
     }
     
     // 定期创建新的花瓣，降低创建频率
@@ -67,11 +67,12 @@ function CherryBlossom() {
       if (petalsArray.length < maxPetals) {
         createPetal();
       }
-    }, 1000); // 增加间隔时间
+    }, 2000); // 从1000毫秒增加到2000毫秒
     
-    // 当窗口滚动时添加一些额外的花瓣，仅添加一个
+    // 当窗口滚动时添加花瓣的概率降低
     const handleScroll = () => {
-      if (petalsArray.length < maxPetals) {
+      // 只有30%的几率在滚动时创建花瓣
+      if (petalsArray.length < maxPetals && Math.random() < 0.3) {
         createPetal();
       }
     };
