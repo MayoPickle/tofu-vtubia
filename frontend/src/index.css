@@ -1,3 +1,7 @@
+/* 导入可爱字体 */
+@import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Mochiy+Pop+One&display=swap');
+
 body {
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
@@ -212,8 +216,15 @@ a:hover {
 /* 卡片组件 */
 .ant-card {
   border-radius: var(--border-radius);
+  overflow: hidden;
+  border: none;
   box-shadow: var(--box-shadow);
-  border: 1px solid var(--secondary-color);
+  transition: transform 0.3s, box-shadow 0.3s;
+}
+
+.ant-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 15px rgba(255, 133, 162, 0.3);
 }
 
 .ant-card-head {
@@ -385,4 +396,16 @@ a:hover {
   .ant-select-selection-overflow {
     flex-wrap: nowrap !important;
   }
+}
+
+/* 可爱风格输入框 */
+.ant-input, .ant-select:not(.ant-select-customize-input) .ant-select-selector {
+  border-color: var(--secondary-color);
+}
+
+.ant-input:hover, .ant-input:focus, 
+.ant-select:not(.ant-select-customize-input) .ant-select-selector:hover,
+.ant-select:not(.ant-select-disabled):hover .ant-select-selector {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 2px rgba(255, 133, 162, 0.2);
 }

@@ -173,10 +173,10 @@ function AdminAuth() {
         {
           key: 'username',
           label: (
-            <div style={{ padding: '8px 0' }}>
+            <div style={{ padding: '4px 0' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Avatar icon={<UserOutlined />} />
-                <Text strong style={{ fontSize: '16px' }}>{username}</Text>
+                <Avatar icon={<UserOutlined />} style={{ flexShrink: 0 }} />
+                <Text strong style={{ fontSize: '15px', margin: 0 }}>{username}</Text>
               </div>
             </div>
           ),
@@ -184,7 +184,7 @@ function AdminAuth() {
         },
         {
           type: 'divider',
-          style: { margin: '8px 0' }
+          style: { margin: '4px 0' }
         }
       ];
       
@@ -198,9 +198,10 @@ function AdminAuth() {
                 height: '8px', 
                 borderRadius: '50%', 
                 backgroundColor: '#52c41a', 
-                marginRight: '8px' 
+                marginRight: '8px',
+                flexShrink: 0
               }}></div>
-              <Text style={{ color: '#52c41a' }}>管理员</Text>
+              <Text style={{ color: '#52c41a', margin: 0 }}>管理员</Text>
             </div>
           ),
           disabled: true,
@@ -210,14 +211,19 @@ function AdminAuth() {
           key: 'admin',
           label: (
             <div style={{ padding: '4px 0' }}>
-              <Link to="/admin/users" style={{ color: 'var(--accent-color)' }}>用户管理</Link>
+              <Link to="/admin/users" style={{ 
+                color: 'var(--accent-color)', 
+                display: 'block', 
+                whiteSpace: 'nowrap',
+                fontSize: '14px'
+              }}>用户管理</Link>
             </div>
           ),
         });
         
         items.push({
           type: 'divider',
-          style: { margin: '8px 0' }
+          style: { margin: '4px 0' }
         });
       }
       
@@ -225,8 +231,14 @@ function AdminAuth() {
         key: 'logout',
         label: (
           <div style={{ padding: '4px 0' }}>
-            <a onClick={handleLogout} style={{ color: '#ff4d4f', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <LogoutOutlined />
+            <a onClick={handleLogout} style={{ 
+              color: '#ff4d4f', 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: '8px',
+              fontSize: '14px'
+            }}>
+              <LogoutOutlined style={{ fontSize: '14px' }} />
               <span>退出登录</span>
             </a>
           </div>
@@ -235,7 +247,13 @@ function AdminAuth() {
       
       return (
         <Dropdown
-          menu={{ items }}
+          menu={{ 
+            items,
+            style: { 
+              width: '140px', // 设置固定宽度
+              padding: '8px 4px',
+            } 
+          }}
           placement="bottomRight"
           trigger={['click']}
         >
@@ -243,8 +261,8 @@ function AdminAuth() {
             cursor: 'pointer', 
             display: 'flex', 
             alignItems: 'center', 
-            gap: '8px', 
-            padding: '4px 8px', 
+            gap: '6px', 
+            padding: '3px 8px', 
             borderRadius: '4px',
             transition: 'background 0.3s',
           }} 
@@ -252,8 +270,8 @@ function AdminAuth() {
           onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'}
           onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
           >
-            <Avatar icon={<UserOutlined />} />
-            <span style={{ color: '#fff' }}>{username}</span>
+            <Avatar size="small" icon={<UserOutlined />} style={{ flexShrink: 0 }} />
+            <span style={{ color: '#fff', fontSize: '14px' }}>{username}</span>
             {isAdmin && (
               <div style={{ 
                 width: '6px', 
@@ -261,7 +279,8 @@ function AdminAuth() {
                 borderRadius: '50%', 
                 backgroundColor: '#52c41a', 
                 marginLeft: '-4px',
-                marginTop: '-12px'
+                marginTop: '-10px',
+                flexShrink: 0
               }}></div>
             )}
           </div>
