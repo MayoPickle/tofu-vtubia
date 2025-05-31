@@ -496,33 +496,200 @@ function LotteryWheel({ isLoggedIn }) {
       maxWidth: '1200px',
       margin: '0 auto',
       position: 'relative',
-      background: 'linear-gradient(135deg, rgba(255, 182, 193, 0.1) 0%, rgba(255, 105, 180, 0.1) 100%)',
+      background: 'linear-gradient(135deg, rgba(255, 182, 193, 0.15) 0%, rgba(255, 105, 180, 0.12) 50%, rgba(255, 240, 245, 0.2) 100%)',
       borderRadius: '20px',
       boxShadow: '0 10px 25px rgba(255, 133, 162, 0.2)',
-      overflow: 'hidden'
+      overflow: 'hidden',
+      minHeight: '600px'
     }}>
-      {/* 装饰性背景元素 */}
+      {/* 装饰性背景元素 - 更可爱的设计 */}
+      {/* 浮动的爱心 */}
       <div style={{
         position: 'absolute',
-        width: '200px',
-        height: '200px',
-        borderRadius: '50%',
-        background: 'radial-gradient(circle, rgba(255,192,203,0.1) 0%, rgba(255,192,203,0) 70%)',
-        top: '10%',
-        right: '-50px',
+        width: '30px',
+        height: '30px',
+        top: '15%',
+        right: '10%',
         zIndex: 0,
+        fontSize: '30px',
+        color: 'rgba(255, 105, 180, 0.3)',
+        animation: 'floatHeart 4s ease-in-out infinite',
+        animationDelay: '0s'
+      }}>💖</div>
+      
+      <div style={{
+        position: 'absolute',
+        width: '25px',
+        height: '25px',
+        top: '40%',
+        left: '8%',
+        zIndex: 0,
+        fontSize: '25px',
+        color: 'rgba(255, 182, 193, 0.4)',
+        animation: 'floatHeart 5s ease-in-out infinite',
+        animationDelay: '1s'
+      }}>💕</div>
+
+      <div style={{
+        position: 'absolute',
+        width: '20px',
+        height: '20px',
+        bottom: '20%',
+        right: '15%',
+        zIndex: 0,
+        fontSize: '20px',
+        color: 'rgba(255, 192, 203, 0.5)',
+        animation: 'floatHeart 3.5s ease-in-out infinite',
+        animationDelay: '2s'
+      }}>💝</div>
+
+      {/* 浮动的星星 */}
+      <div style={{
+        position: 'absolute',
+        width: '35px',
+        height: '35px',
+        top: '25%',
+        left: '12%',
+        zIndex: 0,
+        fontSize: '35px',
+        color: 'rgba(255, 215, 0, 0.4)',
+        animation: 'twinkle 3s ease-in-out infinite',
+        animationDelay: '0.5s'
+      }}>⭐</div>
+
+      <div style={{
+        position: 'absolute',
+        width: '28px',
+        height: '28px',
+        top: '60%',
+        right: '20%',
+        zIndex: 0,
+        fontSize: '28px',
+        color: 'rgba(255, 215, 0, 0.3)',
+        animation: 'twinkle 4s ease-in-out infinite',
+        animationDelay: '1.5s'
+      }}>✨</div>
+
+      <div style={{
+        position: 'absolute',
+        width: '22px',
+        height: '22px',
+        bottom: '30%',
+        left: '15%',
+        zIndex: 0,
+        fontSize: '22px',
+        color: 'rgba(255, 215, 0, 0.4)',
+        animation: 'twinkle 2.5s ease-in-out infinite',
+        animationDelay: '2.5s'
+      }}>🌟</div>
+
+      {/* 彩虹装饰 */}
+      <div style={{
+        position: 'absolute',
+        width: '120px',
+        height: '60px',
+        top: '10%',
+        left: '5%',
+        zIndex: 0,
+        fontSize: '60px',
+        color: 'rgba(255, 105, 180, 0.2)',
+        animation: 'gentle-sway 6s ease-in-out infinite',
+        transform: 'rotate(-15deg)'
+      }}>🌈</div>
+
+      {/* 可爱的花朵 */}
+      <div style={{
+        position: 'absolute',
+        width: '40px',
+        height: '40px',
+        bottom: '15%',
+        right: '8%',
+        zIndex: 0,
+        fontSize: '40px',
+        color: 'rgba(255, 182, 193, 0.3)',
+        animation: 'bloom 4s ease-in-out infinite',
+        animationDelay: '1s'
+      }}>🌸</div>
+
+      <div style={{
+        position: 'absolute',
+        width: '35px',
+        height: '35px',
+        top: '50%',
+        right: '5%',
+        zIndex: 0,
+        fontSize: '35px',
+        color: 'rgba(255, 192, 203, 0.4)',
+        animation: 'bloom 5s ease-in-out infinite',
+        animationDelay: '2.5s'
+      }}>🌺</div>
+
+      {/* 梦幻泡泡效果 */}
+      <div style={{
+        position: 'absolute',
+        width: '80px',
+        height: '80px',
+        borderRadius: '50%',
+        background: 'radial-gradient(circle, rgba(255,192,203,0.15) 0%, rgba(255,192,203,0.05) 50%, rgba(255,192,203,0) 70%)',
+        top: '20%',
+        right: '25%',
+        zIndex: 0,
+        animation: 'bubble-float 7s ease-in-out infinite',
+        animationDelay: '0s'
       }} />
       
       <div style={{
         position: 'absolute',
-        width: '150px',
-        height: '150px',
+        width: '60px',
+        height: '60px',
         borderRadius: '50%',
-        background: 'radial-gradient(circle, rgba(255,105,180,0.1) 0%, rgba(255,105,180,0) 70%)',
-        bottom: '10%',
-        left: '-30px',
+        background: 'radial-gradient(circle, rgba(255,105,180,0.12) 0%, rgba(255,105,180,0.04) 50%, rgba(255,105,180,0) 70%)',
+        bottom: '25%',
+        left: '20%',
         zIndex: 0,
+        animation: 'bubble-float 5s ease-in-out infinite',
+        animationDelay: '2s'
       }} />
+
+      <div style={{
+        position: 'absolute',
+        width: '100px',
+        height: '100px',
+        borderRadius: '50%',
+        background: 'radial-gradient(circle, rgba(255,240,245,0.2) 0%, rgba(255,240,245,0.1) 50%, rgba(255,240,245,0) 70%)',
+        top: '70%',
+        right: '12%',
+        zIndex: 0,
+        animation: 'bubble-float 8s ease-in-out infinite',
+        animationDelay: '3s'
+      }} />
+
+      {/* 可爱的小装饰 */}
+      <div style={{
+        position: 'absolute',
+        width: '25px',
+        height: '25px',
+        top: '35%',
+        right: '30%',
+        zIndex: 0,
+        fontSize: '25px',
+        color: 'rgba(255, 182, 193, 0.4)',
+        animation: 'gentle-sway 4s ease-in-out infinite',
+        animationDelay: '1.5s'
+      }}>🎀</div>
+
+      <div style={{
+        position: 'absolute',
+        width: '30px',
+        height: '30px',
+        bottom: '40%',
+        left: '25%',
+        zIndex: 0,
+        fontSize: '30px',
+        color: 'rgba(255, 105, 180, 0.3)',
+        animation: 'gentle-sway 5s ease-in-out infinite',
+        animationDelay: '2s'
+      }}>🎈</div>
 
       <Title level={isMobile ? 3 : 2} style={{ 
         margin: '16px 0 24px',
@@ -571,15 +738,13 @@ function LotteryWheel({ isLoggedIn }) {
           position: 'relative',
           zIndex: 1
         }}>
-          {/* 上部分：管理区域 */}
-          {renderManagementArea()}
-          
-          {/* 下部分：转盘区域（居中布局） */}
+          {/* 顶部：扭蛋抽奖机区域（居中布局） */}
           <div style={{ 
             display: 'flex',
-            justifyContent: 'center'
+            justifyContent: 'center',
+            marginBottom: '24px'
           }}>
-            {/* 转盘 */}
+            {/* 扭蛋抽奖机 */}
             <div style={{ 
               width: '1000px',
               maxWidth: '100%', // 移动端响应式
@@ -604,6 +769,9 @@ function LotteryWheel({ isLoggedIn }) {
               />
             </div>
           </div>
+          
+          {/* 下部分：管理区域 */}
+          {renderManagementArea()}
         </div>
       )}
 
@@ -616,10 +784,7 @@ function LotteryWheel({ isLoggedIn }) {
           position: 'relative',
           zIndex: 1
         }}>
-          {/* 管理区域 */}
-          {renderManagementArea()}
-          
-          {/* 转盘 */}
+          {/* 扭蛋抽奖机 - 放在最顶部 */}
           <div style={{ 
             backgroundColor: 'rgba(255, 255, 255, 0.95)',
             padding: '20px',
@@ -637,6 +802,9 @@ function LotteryWheel({ isLoggedIn }) {
               gift={gift}
             />
           </div>
+          
+          {/* 管理区域 */}
+          {renderManagementArea()}
         </div>
       )}
 
@@ -662,6 +830,96 @@ function LotteryWheel({ isLoggedIn }) {
           }
           100% {
             transform: translateY(0px);
+          }
+        }
+
+        @keyframes floatHeart {
+          0% {
+            transform: translateY(0px) scale(1);
+            opacity: 0.8;
+          }
+          50% {
+            transform: translateY(-15px) scale(1.1);
+            opacity: 1;
+          }
+          100% {
+            transform: translateY(0px) scale(1);
+            opacity: 0.8;
+          }
+        }
+
+        @keyframes twinkle {
+          0% {
+            transform: scale(1) rotate(0deg);
+            opacity: 0.6;
+          }
+          25% {
+            transform: scale(1.2) rotate(90deg);
+            opacity: 1;
+          }
+          50% {
+            transform: scale(0.8) rotate(180deg);
+            opacity: 0.8;
+          }
+          75% {
+            transform: scale(1.1) rotate(270deg);
+            opacity: 1;
+          }
+          100% {
+            transform: scale(1) rotate(360deg);
+            opacity: 0.6;
+          }
+        }
+
+        @keyframes gentle-sway {
+          0% {
+            transform: translateX(0px) rotate(0deg);
+          }
+          25% {
+            transform: translateX(8px) rotate(5deg);
+          }
+          50% {
+            transform: translateX(0px) rotate(0deg);
+          }
+          75% {
+            transform: translateX(-8px) rotate(-5deg);
+          }
+          100% {
+            transform: translateX(0px) rotate(0deg);
+          }
+        }
+
+        @keyframes bloom {
+          0% {
+            transform: scale(1) rotate(0deg);
+            opacity: 0.7;
+          }
+          50% {
+            transform: scale(1.3) rotate(180deg);
+            opacity: 1;
+          }
+          100% {
+            transform: scale(1) rotate(360deg);
+            opacity: 0.7;
+          }
+        }
+
+        @keyframes bubble-float {
+          0% {
+            transform: translateY(0px) scale(1);
+            opacity: 0.6;
+          }
+          33% {
+            transform: translateY(-20px) scale(1.1);
+            opacity: 0.8;
+          }
+          66% {
+            transform: translateY(-10px) scale(0.9);
+            opacity: 1;
+          }
+          100% {
+            transform: translateY(0px) scale(1);
+            opacity: 0.6;
           }
         }
       `}</style>
