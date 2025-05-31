@@ -1,14 +1,9 @@
 // index.js
-import LotteryWheel from './LotteryWheel';
-import PrizesTable from './PrizesTable';
-import SpinWheel from './SpinWheel';
-import LotteryResult from './LotteryResult';
-
-export {
-  PrizesTable,
-  SpinWheel,
-  LotteryResult,
-  LotteryWheel,
-};
-
-export default LotteryWheel;
+export { default } from './LotteryWheel';
+export { default as LotteryWheel } from './LotteryWheel';
+export { default as PrizesTable } from './PrizesTable';
+export { default as MembersTable } from './MembersTable';
+export { default as GiftSetting } from './GiftSetting';
+export { default as SpinWheel } from './SpinWheel';
+export { default as LotteryResult } from './LotteryResult';
+export * from './constants';
