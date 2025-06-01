@@ -131,7 +131,7 @@ class Database:
         cur.execute("SELECT COUNT(*) FROM songs")
         count = cur.fetchone()[0]
         
-        if count != 0:
+        if count == 0:
             # 插入示例歌曲数据
             example_songs = [
                 ("太聪明", "陈绮贞", "Groupies 吉他手", "民谣/独立流行", 2002, '{"duration": "4:06"}', "华语,独立,流行,文艺"),
