@@ -557,22 +557,6 @@ function SpinWheel({ prizes, result, setResult, mode = LOTTERY_MODES.PRIZE_MODE,
         pointerEvents: 'none'
       }}>🌸</div>
 
-      {/* 抽奖机标题 */}
-      <div style={{
-        fontSize: isMobile ? '28px' : '36px', // 增大标题字体
-        fontWeight: 'bold',
-        background: themeGradient,
-        WebkitBackgroundClip: 'text',
-        WebkitTextFillColor: 'transparent',
-        backgroundClip: 'text',
-        textAlign: 'center',
-        marginBottom: '15px', // 增加底部间距
-        position: 'relative',
-        zIndex: 1
-      }}>
-        🎰 扭蛋抽奖机 🎰
-      </div>
-
       {/* 主要内容区域 */}
       <div style={{
         display: 'flex',
@@ -584,6 +568,77 @@ function SpinWheel({ prizes, result, setResult, mode = LOTTERY_MODES.PRIZE_MODE,
       }}>
         {/* 抽奖机容器 */}
         <div style={{ position: 'relative' }}>
+          {/* 左侧灯泡装饰 */}
+          <div style={{
+            position: 'absolute',
+            left: isMobile ? '-25px' : '-35px',
+            top: '10px',
+            bottom: '10px',
+            width: isMobile ? '15px' : '20px',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between',
+            zIndex: 2
+          }}>
+            {Array.from({ length: isMobile ? 8 : 12 }).map((_, index) => (
+              <div
+                key={`left-${index}`}
+                style={{
+                  width: isMobile ? '15px' : '20px',
+                  height: isMobile ? '15px' : '20px',
+                  borderRadius: '50%',
+                  background: isAnimating 
+                    ? 'radial-gradient(circle, #FFD700 20%, #FFA500 60%, #FF8C00 100%)'
+                    : 'radial-gradient(circle, #B8860B 30%, #8B6914 70%, #654321 100%)',
+                  border: '2px solid #B8860B',
+                  boxShadow: isAnimating 
+                    ? '0 0 8px #FFD700, inset 0 2px 4px rgba(255, 255, 255, 0.3)'
+                    : '0 0 3px #8B6914, inset 0 2px 4px rgba(255, 255, 255, 0.1)',
+                  animation: isAnimating 
+                    ? `bulb-flash-fast ${0.3 + (index % 3) * 0.1}s ease-in-out infinite`
+                    : 'none',
+                  transition: 'all 0.3s ease'
+                }}
+              />
+            ))}
+          </div>
+
+          {/* 右侧灯泡装饰 */}
+          <div style={{
+            position: 'absolute',
+            right: isMobile ? '-25px' : '-35px',
+            top: '10px',
+            bottom: '10px',
+            width: isMobile ? '15px' : '20px',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between',
+            zIndex: 2
+          }}>
+            {Array.from({ length: isMobile ? 8 : 12 }).map((_, index) => (
+              <div
+                key={`right-${index}`}
+                style={{
+                  width: isMobile ? '15px' : '20px',
+                  height: isMobile ? '15px' : '20px',
+                  borderRadius: '50%',
+                  background: isAnimating 
+                    ? 'radial-gradient(circle, #FFD700 20%, #FFA500 60%, #FF8C00 100%)'
+                    : 'radial-gradient(circle, #B8860B 30%, #8B6914 70%, #654321 100%)',
+                  border: '2px solid #B8860B',
+                  boxShadow: isAnimating 
+                    ? '0 0 8px #FFD700, inset 0 2px 4px rgba(255, 255, 255, 0.3)'
+                    : '0 0 3px #8B6914, inset 0 2px 4px rgba(255, 255, 255, 0.1)',
+                  animation: isAnimating 
+                    ? `bulb-flash-fast ${0.3 + (index % 3) * 0.1}s ease-in-out infinite`
+                    : 'none',
+                  animationDelay: isAnimating ? `${(index + 6) * 0.05}s` : '0s', // 更快的错开时间
+                  transition: 'all 0.3s ease'
+                }}
+              />
+            ))}
+          </div>
+
           <div 
             ref={containerRef}
             style={{ 
@@ -941,6 +996,52 @@ function SpinWheel({ prizes, result, setResult, mode = LOTTERY_MODES.PRIZE_MODE,
           100% {
             transform: scale(1);
             opacity: 0.3;
+          }
+        }
+
+        @keyframes bulb-flash {
+          0% {
+            opacity: 0.3;
+            box-shadow: 0 0 5px #FFD700, inset 0 2px 4px rgba(255, 255, 255, 0.1);
+            background: radial-gradient(circle, #B8860B 20%, #8B6914 60%, #654321 100%);
+          }
+          25% {
+            opacity: 0.6;
+            box-shadow: 0 0 10px #FFD700, inset 0 2px 4px rgba(255, 255, 255, 0.2);
+            background: radial-gradient(circle, #DAA520 20%, #B8860B 60%, #8B6914 100%);
+          }
+          50% {
+            opacity: 1;
+            box-shadow: 0 0 15px #FFD700, 0 0 25px #FFA500, inset 0 2px 4px rgba(255, 255, 255, 0.4);
+            background: radial-gradient(circle, #FFD700 20%, #FFA500 60%, #FF8C00 100%);
+          }
+          75% {
+            opacity: 0.8;
+            box-shadow: 0 0 12px #FFD700, 0 0 20px #FFA500, inset 0 2px 4px rgba(255, 255, 255, 0.3);
+            background: radial-gradient(circle, #FFD700 20%, #DAA520 60%, #B8860B 100%);
+          }
+          100% {
+            opacity: 0.3;
+            box-shadow: 0 0 5px #FFD700, inset 0 2px 4px rgba(255, 255, 255, 0.1);
+            background: radial-gradient(circle, #B8860B 20%, #8B6914 60%, #654321 100%);
+          }
+        }
+
+        @keyframes bulb-flash-fast {
+          0% {
+            opacity: 0.2;
+            box-shadow: 0 0 3px #8B6914, inset 0 1px 2px rgba(255, 255, 255, 0.1);
+            background: radial-gradient(circle, #8B6914 30%, #654321 70%, #4A4A4A 100%);
+          }
+          50% {
+            opacity: 1;
+            box-shadow: 0 0 20px #FFD700, 0 0 35px #FFA500, inset 0 2px 4px rgba(255, 255, 255, 0.5);
+            background: radial-gradient(circle, #FFD700 10%, #FFA500 50%, #FF8C00 100%);
+          }
+          100% {
+            opacity: 0.2;
+            box-shadow: 0 0 3px #8B6914, inset 0 1px 2px rgba(255, 255, 255, 0.1);
+            background: radial-gradient(circle, #8B6914 30%, #654321 70%, #4A4A4A 100%);
           }
         }
       `}</style>

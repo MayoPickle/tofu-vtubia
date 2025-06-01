@@ -315,7 +315,7 @@ function LotteryWheel({ isLoggedIn }) {
       label: (
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
           <GiftOutlined />
-          抽奖品
+          礼物盲盒
         </div>
       ),
       value: LOTTERY_MODES.PRIZE_MODE,
@@ -324,7 +324,7 @@ function LotteryWheel({ isLoggedIn }) {
       label: (
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
           <UserOutlined />
-          用礼物抽人
+          幸运星
         </div>
       ),
       value: LOTTERY_MODES.GIFT_MEMBER_MODE,
@@ -704,9 +704,9 @@ function LotteryWheel({ isLoggedIn }) {
         position: 'relative',
         zIndex: 1
       }}>
-        <StarOutlined />
-        幸运抽奖转盘
-        <StarOutlined />
+        🎰
+        扭蛋抽奖机
+        🎰
       </Title>
 
       {/* 模式切换 */}
