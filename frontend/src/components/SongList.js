@@ -45,9 +45,11 @@ function SongList() {
   const fetchSongs = async (search = '') => {
     setLoading(true);
     try {
-      const res = await axios.get(
-        search ? `/api/songs?search=${search}` : '/api/songs'
-      );
+      // 添加per_page参数来获取所有歌曲
+      const url = search 
+        ? `/api/songs?search=${search}&per_page=1000` 
+        : '/api/songs?per_page=1000';
+      const res = await axios.get(url);
       // 从响应中提取songs数组
       const songsData = res.data.songs;
       // 确保数据是数组
