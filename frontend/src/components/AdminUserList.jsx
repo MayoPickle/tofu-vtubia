@@ -1,8 +1,8 @@
 // AdminUserList.jsx
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-import { Table, Button, message, Space, Typography, Card, List, Avatar, Tag, Tooltip, Badge } from 'antd';
-import { UserOutlined, KeyOutlined, CrownOutlined, ReloadOutlined, TeamOutlined, StarOutlined, UserSwitchOutlined } from '@ant-design/icons';
+import { Table, Button, message, Space, Typography, Card, List, Avatar, Tag, Tooltip, Badge, Input } from 'antd';
+import { UserOutlined, KeyOutlined, CrownOutlined, ReloadOutlined, TeamOutlined, UserSwitchOutlined } from '@ant-design/icons';
 import { useDeviceDetect } from '../utils/deviceDetector';
 
 const { Title, Text } = Typography;
@@ -16,6 +16,7 @@ function AdminUserList() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [fadeIn, setFadeIn] = useState(false);
+  const [searchText, setSearchText] = useState('');
   const { isMobile } = useDeviceDetect();
 
   const fetchUsers = async () => {
@@ -87,30 +88,44 @@ function AdminUserList() {
   // 随机颜色生成器，为用户头像选择不同的柔和颜色
   const getAvatarColor = (userId) => {
     const colors = [
-      '#FFB6C1', '#FFD1DC', '#FFC0CB', '#FF85A2', 
+      '#FFB6C1', '#FFD1DC', '#FFC0CB', '#FF85A2',
       '#FF69B4', '#FFA6C9', '#FFB3DE', '#FF99CC'
     ];
     return colors[userId % colors.length];
   };
 
+  const filteredUsers = users.filter(user =>
+    user.username.toLowerCase().includes(searchText.trim().toLowerCase())
+  );
+
   // 渲染用户标签 (管理员状态)
   const renderAdminTag = (isAdmin) => (
     isAdmin ? (
-      <Tag color="#FF69B4" style={{ 
-        borderRadius: '12px', 
-        display: 'inline-flex', 
-        alignItems: 'center', 
-        fontWeight: 'bold',
-        boxShadow: '0 2px 4px rgba(255, 105, 180, 0.2)'
-      }}>
+      <Tag
+        style={{
+          borderRadius: '12px',
+          display: 'inline-flex',
+          alignItems: 'center',
+          fontWeight: 'bold',
+          background: themeGradient,
+          color: '#fff',
+          border: 'none',
+          boxShadow: '0 2px 4px rgba(255, 105, 180, 0.2)'
+        }}
+      >
         <CrownOutlined style={{ marginRight: '4px' }} />管理员
       </Tag>
     ) : (
-      <Tag color="#D3D3D3" style={{ 
-        borderRadius: '12px',
-        display: 'inline-flex', 
-        alignItems: 'center'
-      }}>
+      <Tag
+        style={{
+          borderRadius: '12px',
+          display: 'inline-flex',
+          alignItems: 'center',
+          background: '#f5f5f5',
+          border: '1px solid #ddd',
+          color: '#999'
+        }}
+      >
         <UserOutlined style={{ marginRight: '4px' }} />普通用户
       </Tag>
     )
@@ -210,7 +225,7 @@ function AdminUserList() {
   const renderMobileList = () => (
     <List
       loading={loading}
-      dataSource={users}
+      dataSource={filteredUsers}
       renderItem={user => (
         <Card 
           size="small" 
@@ -379,7 +394,21 @@ function AdminUserList() {
             总用户数: <Badge count={users.length} style={{ backgroundColor: themeColor }} />
           </Text>
         </div>
-        
+
+        <Input
+          placeholder="搜索用户名"
+          allowClear
+          value={searchText}
+          onChange={(e) => setSearchText(e.target.value)}
+          style={{
+            marginLeft: 'auto',
+            marginRight: '12px',
+            width: isMobile ? '120px' : '200px',
+            borderRadius: '8px'
+          }}
+          className="search-input"
+        />
+
         {/* 刷新按钮 */}
         <Tooltip title="刷新用户列表">
           <Button
@@ -387,7 +416,6 @@ function AdminUserList() {
             onClick={fetchUsers}
             loading={loading}
             style={{
-              marginLeft: 'auto',
               borderRadius: '50%',
               width: isMobile ? '34px' : '36px',
               height: isMobile ? '34px' : '36px',
@@ -435,7 +463,7 @@ function AdminUserList() {
             rowKey="id"
             loading={loading}
             columns={columns}
-            dataSource={Array.isArray(users) ? users : []}
+            dataSource={Array.isArray(filteredUsers) ? filteredUsers : []}
             scroll={{ x: 'max-content' }}
             pagination={{
               defaultPageSize: 10,
@@ -477,6 +505,12 @@ function AdminUserList() {
         
         .fade-in {
           animation: fadeInAnimation 0.5s ease forwards;
+        }
+
+        .search-input:hover,
+        .search-input:focus-within {
+          border-color: ${themeColor} !important;
+          box-shadow: 0 0 0 2px rgba(255, 133, 162, 0.2);
         }
         
         @keyframes fadeInAnimation {
