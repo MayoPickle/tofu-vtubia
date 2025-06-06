@@ -13,24 +13,22 @@ services:
     networks:
       - tofu-network
 
-  # 如果需要数据库服务，可以取消下面的注释
-  # db:
-  #   image: postgres:14-alpine
-  #   container_name: tofu-db
-  #   restart: unless-stopped
-  #   environment:
-  #     - POSTGRES_USER=postgres
-  #     - POSTGRES_PASSWORD=postgres
-  #     - POSTGRES_DB=tofu_music
-  #   volumes:
-  #     - postgres_data:/var/lib/postgresql/data
-  #   networks:
-  #     - tofu-network
+  db:
+    image: postgres:14-alpine
+    container_name: tofu-db
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=tofu_music
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - tofu-network
 
 networks:
   tofu-network:
     driver: bridge
 
-# 如果使用PostgreSQL，取消下面的注释
-# volumes:
-#   postgres_data: 
+volumes:
+  postgres_data: 
