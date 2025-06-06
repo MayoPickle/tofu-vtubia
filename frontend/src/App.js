@@ -318,20 +318,41 @@ function App() {
           position: 'fixed',
           bottom: 0,
           width: '100%',
-          padding: '15px 0',
+          padding: '12px 16px',
           background: headerGradient,
           zIndex: 1000,
           borderRadius: '20px 20px 0 0',
           boxShadow: '0 -4px 15px rgba(255, 133, 162, 0.3)',
           backdropFilter: 'blur(10px)',
-          fontSize: '14px',
+          fontSize: '13px',
           fontWeight: '500',
           letterSpacing: '0.5px',
           boxSizing: 'border-box',
-          left: 0
+          left: 0,
+          lineHeight: '1.4'
         }}>
-          © 2025 豆腐观测站 <HeartOutlined style={{ margin: '0 4px' }} /> <br />
-          <span style={{ fontSize: '12px', opacity: '0.9' }}>支援邮箱: support@xiaotudd.com</span>
+          <div style={{ marginBottom: '4px' }}>
+            © 2025 豆腐观测站 <HeartOutlined style={{ margin: '0 4px' }} />
+          </div>
+          <div style={{ 
+            fontSize: '11px', 
+            opacity: '0.9',
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            gap: '8px'
+          }}>
+            <span>support@xiaotudd.com</span>
+            {process.env.REACT_APP_ICP_FILING_NUMBER && (
+              <>
+                <span style={{ opacity: '0.6' }}>|</span>
+                <span style={{ opacity: '0.8' }}>
+                  {process.env.REACT_APP_ICP_FILING_NUMBER}
+                </span>
+              </>
+            )}
+          </div>
         </Footer>
         
         <Live2DModel />
@@ -463,13 +484,34 @@ function App() {
         borderRadius: '20px 20px 0 0',
         boxShadow: '0 -4px 15px rgba(255, 133, 162, 0.3)',
         marginTop: '16px',
-        padding: '18px 0',
+        padding: '16px 30px',
         fontSize: '14px',
         fontWeight: '500',
         letterSpacing: '0.5px',
+        lineHeight: '1.5'
       }}>
-        © 2025 豆腐观测站 <HeartOutlined style={{ margin: '0 4px' }} /> <br />
-        <span style={{ fontSize: '12px', opacity: '0.9' }}>支援邮箱: support@xiaotudd.com</span>
+        <div style={{ marginBottom: '6px' }}>
+          © 2025 豆腐观测站 <HeartOutlined style={{ margin: '0 4px' }} />
+        </div>
+        <div style={{ 
+          fontSize: '12px', 
+          opacity: '0.9',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          gap: '12px',
+          flexWrap: 'wrap'
+        }}>
+          <span>支援邮箱: support@xiaotudd.com</span>
+          {process.env.REACT_APP_ICP_FILING_NUMBER && (
+            <>
+              <span style={{ opacity: '0.6' }}>•</span>
+              <span style={{ opacity: '0.8' }}>
+                {process.env.REACT_APP_ICP_FILING_NUMBER}
+              </span>
+            </>
+          )}
+        </div>
       </Footer>
       
       <Live2DModel />
