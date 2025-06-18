@@ -9,6 +9,11 @@ WORKDIR /app/frontend
 # 复制前端依赖文件
 COPY frontend/package*.json ./
 
+# 声明要接收的 build-arg
+ARG REACT_APP_ICP_FILING_NUMBER
+# 让后续的 npm run build 能看到这个 ENV
+ENV REACT_APP_ICP_FILING_NUMBER=$REACT_APP_ICP_FILING_NUMBER
+
 # 安装依赖
 RUN npm install
 
