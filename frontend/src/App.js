@@ -503,14 +503,18 @@ function App() {
           flexWrap: 'wrap'
         }}>
           <span>支援邮箱: support@xiaotudd.com</span>
-          {process.env.REACT_APP_ICP_FILING_NUMBER && (
-            <>
-              <span style={{ opacity: '0.6' }}>•</span>
-              <span style={{ opacity: '0.8' }}>
-                {process.env.REACT_APP_ICP_FILING_NUMBER}
-              </span>
-            </>
-          )}
+          // {process.env.REACT_APP_ICP_FILING_NUMBER && (
+          //   <>
+          //     <span style={{ opacity: '0.6' }}>•</span>
+          //     <span style={{ opacity: '0.8' }}>
+          //       {process.env.REACT_APP_ICP_FILING_NUMBER}
+          //     </span>
+          //   </>
+          // )}
+          <span style={{ opacity: '0.6' }}>•</span>
+          <span style={{ opacity: '0.8' }}>
+            湘ICP 备2025124288号-1
+          </span>
         </div>
       </Footer>
       
