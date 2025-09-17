@@ -141,20 +141,20 @@ function Profile() {
         ) : (
           <Row gutter={[16, 16]}>
             <Col xs={12} md={6}>
-              <Statistic title="今日盈亏" value={pnl.today?.pnl ?? 0} precision={2} valueStyle={{ color: (pnl.today?.pnl ?? 0) >= 0 ? '#3f8600' : '#cf1322' }} suffix="币" />
-              <div style={{ fontSize: 12, opacity: 0.7 }}>成本 {pnl.today?.cost ?? 0} | 价值 {pnl.today?.value ?? 0}</div>
+              <Statistic title="今日盈亏" value={(pnl.today?.pnl ?? 0) / 100} precision={2} valueStyle={{ color: (pnl.today?.pnl ?? 0) >= 0 ? '#3f8600' : '#cf1322' }} suffix="电池" />
+              <div style={{ fontSize: 12, opacity: 0.7 }}>成本 {((pnl.today?.cost ?? 0) / 100).toFixed(2)} 电池 | 价值 {((pnl.today?.value ?? 0) / 100).toFixed(2)} 电池</div>
             </Col>
             <Col xs={12} md={6}>
-              <Statistic title="本周盈亏" value={pnl.week?.pnl ?? 0} precision={2} valueStyle={{ color: (pnl.week?.pnl ?? 0) >= 0 ? '#3f8600' : '#cf1322' }} suffix="币" />
-              <div style={{ fontSize: 12, opacity: 0.7 }}>成本 {pnl.week?.cost ?? 0} | 价值 {pnl.week?.value ?? 0}</div>
+              <Statistic title="本周盈亏" value={(pnl.week?.pnl ?? 0) / 100} precision={2} valueStyle={{ color: (pnl.week?.pnl ?? 0) >= 0 ? '#3f8600' : '#cf1322' }} suffix="电池" />
+              <div style={{ fontSize: 12, opacity: 0.7 }}>成本 {((pnl.week?.cost ?? 0) / 100).toFixed(2)} 电池 | 价值 {((pnl.week?.value ?? 0) / 100).toFixed(2)} 电池</div>
             </Col>
             <Col xs={12} md={6}>
-              <Statistic title="本月盈亏" value={pnl.month?.pnl ?? 0} precision={2} valueStyle={{ color: (pnl.month?.pnl ?? 0) >= 0 ? '#3f8600' : '#cf1322' }} suffix="币" />
-              <div style={{ fontSize: 12, opacity: 0.7 }}>成本 {pnl.month?.cost ?? 0} | 价值 {pnl.month?.value ?? 0}</div>
+              <Statistic title="本月盈亏" value={(pnl.month?.pnl ?? 0) / 100} precision={2} valueStyle={{ color: (pnl.month?.pnl ?? 0) >= 0 ? '#3f8600' : '#cf1322' }} suffix="电池" />
+              <div style={{ fontSize: 12, opacity: 0.7 }}>成本 {((pnl.month?.cost ?? 0) / 100).toFixed(2)} 电池 | 价值 {((pnl.month?.value ?? 0) / 100).toFixed(2)} 电池</div>
             </Col>
             <Col xs={12} md={6}>
-              <Statistic title="总盈亏" value={pnl.total?.pnl ?? 0} precision={2} valueStyle={{ color: (pnl.total?.pnl ?? 0) >= 0 ? '#3f8600' : '#cf1322' }} suffix="币" />
-              <div style={{ fontSize: 12, opacity: 0.7 }}>成本 {pnl.total?.cost ?? 0} | 价值 {pnl.total?.value ?? 0}</div>
+              <Statistic title="总盈亏" value={(pnl.total?.pnl ?? 0) / 100} precision={2} valueStyle={{ color: (pnl.total?.pnl ?? 0) >= 0 ? '#3f8600' : '#cf1322' }} suffix="电池" />
+              <div style={{ fontSize: 12, opacity: 0.7 }}>成本 {((pnl.total?.cost ?? 0) / 100).toFixed(2)} 电池 | 价值 {((pnl.total?.value ?? 0) / 100).toFixed(2)} 电池</div>
             </Col>
           </Row>
         )}
