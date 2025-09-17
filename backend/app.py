@@ -1004,7 +1004,7 @@ def register_routes(app):
                     SELECT 
                         COALESCE(SUM(
                             COALESCE(
-                                (NULLIF(blind_box->>'original_gift_price','')::numeric) * COALESCE(gift_num, 1),
+                                (NULLIF((blind_box::jsonb)->>'original_gift_price','')::numeric) * COALESCE(gift_num, 1),
                                 total_coin,
                                 total_price,
                                 (price * COALESCE(gift_num, 1)),
@@ -1013,8 +1013,8 @@ def register_routes(app):
                         ), 0) AS total_cost,
                         COALESCE(SUM(
                             COALESCE(
-                                (NULLIF(blind_box->>'revealed_gift_price','')::numeric) * COALESCE(gift_num, 1),
-                                (NULLIF(blind_box->>'gift_tip_price','')::numeric) * COALESCE(gift_num, 1),
+                                (NULLIF((blind_box::jsonb)->>'revealed_gift_price','')::numeric) * COALESCE(gift_num, 1),
+                                (NULLIF((blind_box::jsonb)->>'gift_tip_price','')::numeric) * COALESCE(gift_num, 1),
                                 total_price,
                                 (price * COALESCE(gift_num, 1)),
                                 total_coin,
@@ -1055,6 +1055,303 @@ def register_routes(app):
             print(f"计算盈亏失败: {str(e)}")
             return jsonify({"message": f"计算盈亏失败: {str(e)}"}), 500
 
+    @app.route("/api/pnl/self/top_gifts", methods=["GET"])
+    def get_self_top_gifts():
+        """
+        当前登录用户在本房间投喂的礼物按单次价值的最高值进行Top5排序。
+        返回：[{ gift_id, gift_name, max_value, assets:{gif,webp,img_basic}, last_timestamp }]
+        单位：分（前端换算为电池）。
+        """
+        if "username" not in session:
+            return jsonify({"message": "请先登录"}), 401
+
+        conn_sqlite = get_connection()
+        cur_sqlite = conn_sqlite.cursor()
+        cur_sqlite.execute("SELECT bilibili_uid FROM users WHERE username = ?", (session["username"],))
+        row = cur_sqlite.fetchone()
+        conn_sqlite.close()
+        if not row or not row["bilibili_uid"]:
+            return jsonify({"items": []}), 200
+
+        uid = str(row["bilibili_uid"]).strip()
+
+        try:
+            config = get_config()
+            pg_conn = psycopg2.connect(
+                host=config.POSTGRES_HOST,
+                port=config.POSTGRES_PORT,
+                database=config.POSTGRES_DB,
+                user=config.POSTGRES_USER,
+                password=config.POSTGRES_PASSWORD
+            )
+            cur = pg_conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+
+            sql = """
+                WITH record_values AS (
+                    SELECT 
+                      gift_id,
+                      gift_name,
+                      COALESCE(
+                        CASE 
+                          WHEN is_blind_gift THEN 
+                            COALESCE((NULLIF((blind_box::jsonb)->>'revealed_gift_price','')::numeric) * COALESCE(gift_num,1),
+                                     (NULLIF((blind_box::jsonb)->>'gift_tip_price','')::numeric) * COALESCE(gift_num,1),
+                                     total_price,
+                                     (price * COALESCE(gift_num,1)),
+                                     0)
+                          ELSE 
+                            COALESCE(total_price, (price * COALESCE(gift_num,1)), 0)
+                        END, 0
+                      ) AS single_value,
+                      gift_assets,
+                      timestamp
+                    FROM gift_records
+                    WHERE uid = %s
+                      AND room_id::text = %s
+                )
+                SELECT 
+                  gift_id,
+                  gift_name,
+                  MAX(single_value) AS max_value,
+                  MAX(NULLIF((gift_assets::jsonb)->>'gif','')) AS asset_gif,
+                  MAX(NULLIF((gift_assets::jsonb)->>'webp','')) AS asset_webp,
+                  MAX(NULLIF((gift_assets::jsonb)->>'img_basic','')) AS asset_img,
+                  MAX(timestamp) AS last_timestamp
+                FROM record_values
+                GROUP BY gift_id, gift_name
+                ORDER BY max_value DESC
+                LIMIT 5
+            """
+            cur.execute(sql, [uid, str(1883353860)])
+            rows = cur.fetchall()
+            items = []
+            for r in rows:
+                items.append({
+                    "gift_id": r["gift_id"],
+                    "gift_name": r["gift_name"],
+                    "max_value": float(r["max_value"] or 0),
+                    "assets": {
+                        "gif": r["asset_gif"],
+                        "webp": r["asset_webp"],
+                        "img_basic": r["asset_img"],
+                    },
+                    "last_timestamp": r["last_timestamp"].isoformat() if r["last_timestamp"] else None
+                })
+            cur.close()
+            pg_conn.close()
+            return jsonify({"items": items}), 200
+        except Exception as e:
+            print(f"获取Top礼物失败: {str(e)}")
+            return jsonify({"message": f"获取Top礼物失败: {str(e)}"}), 500
+
+    @app.route("/api/pnl/self/top_profit_blind", methods=["GET"])
+    def get_self_top_profit_blind():
+        """
+        盲盒“单次差价(揭示-成本)”最大的 Top5（仅本房间）。
+        返回字段：original_gift_name, revealed_gift_name, original_cost, revealed_value, profit, assets, timestamp。
+        单位：分。
+        """
+        if "username" not in session:
+            return jsonify({"message": "请先登录"}), 401
+
+        conn_sqlite = get_connection()
+        cur_sqlite = conn_sqlite.cursor()
+        cur_sqlite.execute("SELECT bilibili_uid FROM users WHERE username = ?", (session["username"],))
+        row = cur_sqlite.fetchone()
+        conn_sqlite.close()
+        if not row or not row["bilibili_uid"]:
+            return jsonify({"items": []}), 200
+
+        uid = str(row["bilibili_uid"]).strip()
+
+        try:
+            config = get_config()
+            pg_conn = psycopg2.connect(
+                host=config.POSTGRES_HOST,
+                port=config.POSTGRES_PORT,
+                database=config.POSTGRES_DB,
+                user=config.POSTGRES_USER,
+                password=config.POSTGRES_PASSWORD
+            )
+            cur = pg_conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+
+            sql = """
+                SELECT 
+                  gift_id,
+                  gift_name,
+                  NULLIF((blind_box::jsonb)->>'original_gift_name','') AS original_gift_name_json,
+                  NULLIF((blind_box::jsonb)->>'revealed_gift_name','') AS revealed_gift_name_json,
+                  COALESCE(
+                    (NULLIF((blind_box::jsonb)->>'original_gift_price','')::numeric) * COALESCE(gift_num,1),
+                    total_coin,
+                    total_price,
+                    (price * COALESCE(gift_num,1)),
+                    0
+                  ) AS original_cost,
+                  COALESCE(
+                    (NULLIF((blind_box::jsonb)->>'revealed_gift_price','')::numeric) * COALESCE(gift_num,1),
+                    (NULLIF((blind_box::jsonb)->>'gift_tip_price','')::numeric) * COALESCE(gift_num,1),
+                    total_price,
+                    (price * COALESCE(gift_num,1)),
+                    total_coin,
+                    0
+                  ) AS revealed_value,
+                  gift_assets,
+                  timestamp
+                FROM gift_records
+                WHERE uid = %s
+                  AND room_id::text = %s
+                  AND is_blind_gift = true
+                ORDER BY (COALESCE(
+                           (NULLIF((blind_box::jsonb)->>'revealed_gift_price','')::numeric) * COALESCE(gift_num,1),
+                           (NULLIF((blind_box::jsonb)->>'gift_tip_price','')::numeric) * COALESCE(gift_num,1),
+                           total_price,
+                           (price * COALESCE(gift_num,1)),
+                           total_coin,
+                           0
+                         ) - COALESCE(
+                           (NULLIF((blind_box::jsonb)->>'original_gift_price','')::numeric) * COALESCE(gift_num,1),
+                           total_coin,
+                           total_price,
+                           (price * COALESCE(gift_num,1)),
+                           0
+                         )) DESC
+                LIMIT 5
+            """
+            cur.execute(sql, [uid, str(1883353860)])
+            rows = cur.fetchall()
+            items = []
+            for r in rows:
+                original_name = r["original_gift_name_json"] or None
+                revealed_name = r["revealed_gift_name_json"] or r["gift_name"]
+                cost = float(r["original_cost"] or 0)
+                value = float(r["revealed_value"] or 0)
+                assets = r["gift_assets"]
+                gif = None
+                webp = None
+                img_basic = None
+                if isinstance(assets, dict):
+                    gif = assets.get("gif")
+                    webp = assets.get("webp")
+                    img_basic = assets.get("img_basic")
+                items.append({
+                    "original_gift_name": original_name,
+                    "revealed_gift_name": revealed_name,
+                    "original_cost": cost,
+                    "revealed_value": value,
+                    "profit": value - cost,
+                    "assets": {
+                        "gif": gif,
+                        "webp": webp,
+                        "img_basic": img_basic,
+                    },
+                    "timestamp": r["timestamp"].isoformat() if r["timestamp"] else None
+                })
+            cur.close()
+            pg_conn.close()
+            return jsonify({"items": items}), 200
+        except Exception as e:
+            print(f"获取盲盒差价Top失败: {str(e)}")
+            return jsonify({"message": f"获取盲盒差价Top失败: {str(e)}"}), 500
+
+    @app.route("/api/pnl/self/top_loss_blind", methods=["GET"])
+    def get_self_top_loss_blind():
+        """
+        盲盒“单次负收益(亏损)最大”的礼物 Top5（仅本房间），并返回该礼物的亏损次数、总数量与总亏损。
+        返回：gift_id, gift_name, single_max_loss, loss_count, total_units, total_loss, assets。
+        单位：分。
+        """
+        if "username" not in session:
+            return jsonify({"message": "请先登录"}), 401
+
+        conn_sqlite = get_connection()
+        cur_sqlite = conn_sqlite.cursor()
+        cur_sqlite.execute("SELECT bilibili_uid FROM users WHERE username = ?", (session["username"],))
+        row = cur_sqlite.fetchone()
+        conn_sqlite.close()
+        if not row or not row["bilibili_uid"]:
+            return jsonify({"items": []}), 200
+
+        uid = str(row["bilibili_uid"]).strip()
+
+        try:
+            config = get_config()
+            pg_conn = psycopg2.connect(
+                host=config.POSTGRES_HOST,
+                port=config.POSTGRES_PORT,
+                database=config.POSTGRES_DB,
+                user=config.POSTGRES_USER,
+                password=config.POSTGRES_PASSWORD
+            )
+            cur = pg_conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+
+            sql = """
+                WITH rec AS (
+                    SELECT 
+                      COALESCE(NULLIF((blind_box::jsonb)->>'revealed_gift_id','')::bigint, gift_id) AS revealed_id,
+                      COALESCE(NULLIF((blind_box::jsonb)->>'revealed_gift_name',''), gift_name) AS revealed_name,
+                      COALESCE(
+                        (NULLIF((blind_box::jsonb)->>'revealed_gift_price','')::numeric) * COALESCE(gift_num,1),
+                        (NULLIF((blind_box::jsonb)->>'gift_tip_price','')::numeric) * COALESCE(gift_num,1),
+                        total_price,
+                        (price * COALESCE(gift_num,1)),
+                        total_coin,
+                        0
+                      ) AS revealed_value,
+                      COALESCE(
+                        (NULLIF((blind_box::jsonb)->>'original_gift_price','')::numeric) * COALESCE(gift_num,1),
+                        total_coin,
+                        total_price,
+                        (price * COALESCE(gift_num,1)),
+                        0
+                      ) AS original_cost,
+                      COALESCE(gift_num,1) AS units,
+                      gift_assets
+                    FROM gift_records
+                    WHERE uid = %s
+                      AND room_id::text = %s
+                      AND is_blind_gift = true
+                )
+                SELECT 
+                  revealed_id AS gift_id,
+                  revealed_name AS gift_name,
+                  (0 - MIN((revealed_value - original_cost)) FILTER (WHERE (revealed_value - original_cost) < 0)) AS single_max_loss_abs,
+                  COUNT(*) FILTER (WHERE (revealed_value - original_cost) < 0) AS loss_count,
+                  SUM(units) FILTER (WHERE (revealed_value - original_cost) < 0) AS total_units_loss,
+                  SUM(CASE WHEN (revealed_value - original_cost) < 0 THEN (original_cost - revealed_value) ELSE 0 END) AS total_loss_abs,
+                  MAX(NULLIF((gift_assets::jsonb)->>'gif','')) AS asset_gif,
+                  MAX(NULLIF((gift_assets::jsonb)->>'webp','')) AS asset_webp,
+                  MAX(NULLIF((gift_assets::jsonb)->>'img_basic','')) AS asset_img
+                FROM rec
+                GROUP BY revealed_id, revealed_name
+                HAVING COUNT(*) FILTER (WHERE (revealed_value - original_cost) < 0) > 0
+                ORDER BY single_max_loss_abs DESC
+                LIMIT 5
+            """
+            cur.execute(sql, [uid, str(1883353860)])
+            rows = cur.fetchall()
+            items = []
+            for r in rows:
+                items.append({
+                    "gift_id": r["gift_id"],
+                    "gift_name": r["gift_name"],
+                    "single_max_loss": float(r["single_max_loss_abs"] or 0),
+                    "loss_count": int(r["loss_count"] or 0),
+                    "total_units": int(r["total_units_loss"] or 0),
+                    "total_loss": float(r["total_loss_abs"] or 0),
+                    "assets": {
+                        "gif": r["asset_gif"],
+                        "webp": r["asset_webp"],
+                        "img_basic": r["asset_img"],
+                    }
+                })
+            cur.close()
+            pg_conn.close()
+            return jsonify({"items": items}), 200
+        except Exception as e:
+            print(f"获取盲盒亏损Top失败: {str(e)}")
+            return jsonify({"message": f"获取盲盒亏损Top失败: {str(e)}"}), 500
+
     # 添加图片代理接口
     @app.route("/api/proxy/image")
     def proxy_image():
@@ -1086,47 +1383,7 @@ def register_routes(app):
             print(f"代理图片错误: {str(e)}")
             return jsonify({"message": "获取图片失败"}), 500
 
-    @app.route("/api/bilibili/avatar")
-    def bilibili_avatar():
-        """
-        根据 B 站 UID 获取头像并直接返回图片内容
-        使用服务端代理以避免防盗链和跨域问题
-        用法：/api/bilibili/avatar?uid=123456
-        """
-        uid = request.args.get('uid')
-        if not uid:
-            return jsonify({"message": "缺少UID"}), 400
-
-        try:
-            # 1) 调用 B 站接口获取用户信息（包含 face 头像地址）
-            info_url = f"https://api.bilibili.com/x/space/acc/info?mid={uid}&jsonp=jsonp"
-            headers = {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-                'Referer': 'https://www.bilibili.com'
-            }
-            resp = requests.get(info_url, headers=headers, timeout=6)
-            data = resp.json() if resp.headers.get('Content-Type', '').startswith('application/json') else {}
-
-            if not data or data.get('code') not in (0, None):
-                return jsonify({"message": "获取用户信息失败"}), 502
-
-            face_url = (data.get('data') or {}).get('face')
-            if not face_url:
-                return jsonify({"message": "未找到头像"}), 404
-
-            # 2) 代理拉取头像图片并返回
-            img_resp = requests.get(face_url, headers=headers, timeout=10)
-            return Response(
-                img_resp.content,
-                mimetype=img_resp.headers.get('Content-Type', 'image/jpeg'),
-                headers={
-                    "Cache-Control": "public, max-age=86400",
-                    "Access-Control-Allow-Origin": "*"
-                }
-            )
-        except Exception as e:
-            print(f"获取B站头像错误: {str(e)}")
-            return jsonify({"message": "获取头像失败"}), 500
+    
 
 
 # 创建应用实例

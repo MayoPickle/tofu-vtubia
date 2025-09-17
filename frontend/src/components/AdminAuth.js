@@ -37,8 +37,25 @@ function AdminAuth() {
         setIsAdmin(!!res.data.is_admin);
         setUsername(res.data.username || null);
         setBilibiliUid(res.data.bilibili_uid || null);
+        // 统一使用舰长头像
         if (res.data.bilibili_uid) {
-          setAvatarUrl(`/api/bilibili/avatar?uid=${res.data.bilibili_uid}`);
+          try {
+            const resp = await fetch('/api/guards');
+            if (resp.ok) {
+              const data = await resp.json();
+              const list = data.guards || [];
+              const match = list.find(g => String(g.uid) === String(res.data.bilibili_uid));
+              if (match && match.face) {
+                setAvatarUrl(`/api/proxy/image?url=${encodeURIComponent(match.face)}`);
+              } else {
+                setAvatarUrl(null);
+              }
+            } else {
+              setAvatarUrl(null);
+            }
+          } catch {
+            setAvatarUrl(null);
+          }
         } else {
           setAvatarUrl(null);
         }
@@ -157,24 +174,7 @@ function AdminAuth() {
             <Avatar 
               src={avatarUrl || undefined}
               icon={<UserOutlined />}
-              onError={async () => {
-                if (!bilibiliUid || avatarFallbackTried) return false;
-                try {
-                  const resp = await fetch('/api/guards');
-                  if (resp.ok) {
-                    const data = await resp.json();
-                    const list = data.guards || [];
-                    const match = list.find(g => String(g.uid) === String(bilibiliUid));
-                    if (match && match.face) {
-                      setAvatarUrl(`/api/proxy/image?url=${encodeURIComponent(match.face)}`);
-                      setAvatarFallbackTried(true);
-                      return false;
-                    }
-                  }
-                } catch {}
-                setAvatarFallbackTried(true);
-                return false;
-              }}
+              onError={() => { setAvatarUrl(null); setAvatarFallbackTried(true); return false; }}
             />
             <Text strong>{username}</Text>
             {isAdmin && <Text type="success">(管理员)</Text>}
@@ -241,24 +241,7 @@ function AdminAuth() {
                   src={avatarUrl || undefined}
                   icon={<UserOutlined />} 
                   style={{ flexShrink: 0 }}
-                  onError={async () => {
-                    if (!bilibiliUid || avatarFallbackTried) return false;
-                    try {
-                      const resp = await fetch('/api/guards');
-                      if (resp.ok) {
-                        const data = await resp.json();
-                        const list = data.guards || [];
-                        const match = list.find(g => String(g.uid) === String(bilibiliUid));
-                        if (match && match.face) {
-                          setAvatarUrl(`/api/proxy/image?url=${encodeURIComponent(match.face)}`);
-                          setAvatarFallbackTried(true);
-                          return false;
-                        }
-                      }
-                    } catch {}
-                    setAvatarFallbackTried(true);
-                    return false;
-                  }}
+                  onError={() => { setAvatarUrl(null); setAvatarFallbackTried(true); return false; }}
                 />
                 <Text strong style={{ fontSize: '15px', margin: 0 }}>{username}</Text>
               </div>
@@ -378,24 +361,7 @@ function AdminAuth() {
               src={avatarUrl || undefined} 
               icon={<UserOutlined />} 
               style={{ flexShrink: 0 }}
-              onError={async () => {
-                if (!bilibiliUid || avatarFallbackTried) return false;
-                try {
-                  const resp = await fetch('/api/guards');
-                  if (resp.ok) {
-                    const data = await resp.json();
-                    const list = data.guards || [];
-                    const match = list.find(g => String(g.uid) === String(bilibiliUid));
-                    if (match && match.face) {
-                      setAvatarUrl(`/api/proxy/image?url=${encodeURIComponent(match.face)}`);
-                      setAvatarFallbackTried(true);
-                      return false;
-                    }
-                  }
-                } catch {}
-                setAvatarFallbackTried(true);
-                return false;
-              }}
+              onError={() => { setAvatarUrl(null); setAvatarFallbackTried(true); return false; }}
             />
             <span style={{ color: '#fff', fontSize: '14px' }}>{username}</span>
             {isAdmin && (
