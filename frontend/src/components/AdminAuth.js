@@ -14,6 +14,9 @@ function AdminAuth() {
 
   const [isAdmin, setIsAdmin] = useState(false);
   const [username, setUsername] = useState(null);
+  const [bilibiliUid, setBilibiliUid] = useState(null);
+  const [avatarUrl, setAvatarUrl] = useState(null);
+  const [avatarFallbackTried, setAvatarFallbackTried] = useState(false);
 
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [loginForm] = Form.useForm();
@@ -29,14 +32,29 @@ function AdminAuth() {
   // 检查是否已登录
   const checkAuth = async () => {
     try {
-      const res = await axios.get('/api/check_auth');
-      if (res.data.is_admin) {
-        setIsAdmin(true);
+      const res = await axios.get('/api/me', { withCredentials: true });
+      if (res.data && res.data.authenticated) {
+        setIsAdmin(!!res.data.is_admin);
+        setUsername(res.data.username || null);
+        setBilibiliUid(res.data.bilibili_uid || null);
+        if (res.data.bilibili_uid) {
+          setAvatarUrl(`/api/bilibili/avatar?uid=${res.data.bilibili_uid}`);
+        } else {
+          setAvatarUrl(null);
+        }
+      } else {
+        setIsAdmin(false);
+        setUsername(null);
+        setBilibiliUid(null);
+        setAvatarUrl(null);
+        setAvatarFallbackTried(false);
       }
-      setUsername(res.data.username || null);
     } catch (err) {
       setIsAdmin(false);
       setUsername(null);
+      setBilibiliUid(null);
+      setAvatarUrl(null);
+      setAvatarFallbackTried(false);
     }
   };
 
@@ -136,7 +154,28 @@ function AdminAuth() {
       return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Avatar icon={<UserOutlined />} />
+            <Avatar 
+              src={avatarUrl || undefined}
+              icon={<UserOutlined />}
+              onError={async () => {
+                if (!bilibiliUid || avatarFallbackTried) return false;
+                try {
+                  const resp = await fetch('/api/guards');
+                  if (resp.ok) {
+                    const data = await resp.json();
+                    const list = data.guards || [];
+                    const match = list.find(g => String(g.uid) === String(bilibiliUid));
+                    if (match && match.face) {
+                      setAvatarUrl(`/api/proxy/image?url=${encodeURIComponent(match.face)}`);
+                      setAvatarFallbackTried(true);
+                      return false;
+                    }
+                  }
+                } catch {}
+                setAvatarFallbackTried(true);
+                return false;
+              }}
+            />
             <Text strong>{username}</Text>
             {isAdmin && <Text type="success">(管理员)</Text>}
           </div>
@@ -198,7 +237,29 @@ function AdminAuth() {
           label: (
             <div style={{ padding: '4px 0' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Avatar icon={<UserOutlined />} style={{ flexShrink: 0 }} />
+                <Avatar 
+                  src={avatarUrl || undefined}
+                  icon={<UserOutlined />} 
+                  style={{ flexShrink: 0 }}
+                  onError={async () => {
+                    if (!bilibiliUid || avatarFallbackTried) return false;
+                    try {
+                      const resp = await fetch('/api/guards');
+                      if (resp.ok) {
+                        const data = await resp.json();
+                        const list = data.guards || [];
+                        const match = list.find(g => String(g.uid) === String(bilibiliUid));
+                        if (match && match.face) {
+                          setAvatarUrl(`/api/proxy/image?url=${encodeURIComponent(match.face)}`);
+                          setAvatarFallbackTried(true);
+                          return false;
+                        }
+                      }
+                    } catch {}
+                    setAvatarFallbackTried(true);
+                    return false;
+                  }}
+                />
                 <Text strong style={{ fontSize: '15px', margin: 0 }}>{username}</Text>
               </div>
             </div>
@@ -251,6 +312,25 @@ function AdminAuth() {
       }
       
       items.push({
+        key: 'profile',
+        label: (
+          <div style={{ padding: '4px 0' }}>
+            <Link to="/profile" style={{ 
+              color: 'var(--accent-color)', 
+              display: 'block', 
+              whiteSpace: 'nowrap',
+              fontSize: '14px'
+            }}>个人中心</Link>
+          </div>
+        ),
+      });
+
+      items.push({
+        type: 'divider',
+        style: { margin: '4px 0' }
+      });
+
+      items.push({
         key: 'logout',
         label: (
           <div style={{ padding: '4px 0' }}>
@@ -293,7 +373,30 @@ function AdminAuth() {
           onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'}
           onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
           >
-            <Avatar size="small" icon={<UserOutlined />} style={{ flexShrink: 0 }} />
+            <Avatar 
+              size="small" 
+              src={avatarUrl || undefined} 
+              icon={<UserOutlined />} 
+              style={{ flexShrink: 0 }}
+              onError={async () => {
+                if (!bilibiliUid || avatarFallbackTried) return false;
+                try {
+                  const resp = await fetch('/api/guards');
+                  if (resp.ok) {
+                    const data = await resp.json();
+                    const list = data.guards || [];
+                    const match = list.find(g => String(g.uid) === String(bilibiliUid));
+                    if (match && match.face) {
+                      setAvatarUrl(`/api/proxy/image?url=${encodeURIComponent(match.face)}`);
+                      setAvatarFallbackTried(true);
+                      return false;
+                    }
+                  }
+                } catch {}
+                setAvatarFallbackTried(true);
+                return false;
+              }}
+            />
             <span style={{ color: '#fff', fontSize: '14px' }}>{username}</span>
             {isAdmin && (
               <div style={{ 

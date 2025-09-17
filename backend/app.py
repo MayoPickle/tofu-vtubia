@@ -7,6 +7,7 @@ import psycopg2
 import psycopg2.extras
 from datetime import datetime
 import requests
+from datetime import date, datetime, timedelta
 
 import os
 import time
@@ -272,6 +273,39 @@ def register_routes(app):
             "authenticated": True,
             "username": session["username"],
             "is_admin": session.get("is_admin", 0)
+        }), 200
+
+    @app.route("/api/me", methods=["GET"])
+    def get_current_user():
+        """
+        获取当前会话用户的详细信息
+        返回字段：authenticated, id, username, bilibili_uid, is_admin
+        未登录时返回 { authenticated: False }
+        """
+        if "username" not in session:
+            return jsonify({"authenticated": False}), 200
+
+        username = session.get("username")
+
+        conn = get_connection()
+        cur = conn.cursor()
+        cur.execute("""
+            SELECT id, username, bilibili_uid, is_admin
+            FROM users
+            WHERE username = ?
+        """, (username,))
+        row = cur.fetchone()
+        conn.close()
+
+        if not row:
+            return jsonify({"authenticated": False}), 200
+
+        return jsonify({
+            "authenticated": True,
+            "id": row["id"],
+            "username": row["username"],
+            "bilibili_uid": row["bilibili_uid"],
+            "is_admin": row["is_admin"]
         }), 200
 
     # 文件上传相关API
@@ -919,6 +953,108 @@ def register_routes(app):
                 "message": f"获取舰长信息失败: {str(e)}"
             }), 500
 
+    @app.route("/api/pnl/self", methods=["GET"])
+    def get_self_pnl():
+        """
+        计算当前登录用户的盈亏（仅盲盒礼物）
+        口径：
+        - 成本: total_coin（或 total_price），以金币口径计
+        - 价值: 盲盒结果中的 reward_total_coin / total_value（若缺失按0处理）
+        维度：今天 / 本周 / 本月 / 总计
+        返回：{ today: {cost, value, pnl}, week: {...}, month: {...}, total: {...} }
+        """
+        # 会话校验
+        if "username" not in session:
+            return jsonify({"message": "请先登录"}), 401
+
+        # 查询用户的 bilibili_uid（在 sqlite 用户表）
+        conn_sqlite = get_connection()
+        cur_sqlite = conn_sqlite.cursor()
+        cur_sqlite.execute("SELECT bilibili_uid FROM users WHERE username = ?", (session["username"],))
+        row = cur_sqlite.fetchone()
+        conn_sqlite.close()
+        if not row or not row["bilibili_uid"]:
+            return jsonify({"message": "未绑定B站UID，无法统计盈亏"}), 400
+
+        uid = str(row["bilibili_uid"]).strip()
+
+        # 连接 Postgres 查询 gift_records
+        try:
+            config = get_config()
+            pg_conn = psycopg2.connect(
+                host=config.POSTGRES_HOST,
+                port=config.POSTGRES_PORT,
+                database=config.POSTGRES_DB,
+                user=config.POSTGRES_USER,
+                password=config.POSTGRES_PASSWORD
+            )
+            cur = pg_conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+
+            def query_range(start_time=None):
+                params = [uid, str(1883353860)]
+                time_filter_sql = ""
+                if start_time is not None:
+                    time_filter_sql = " AND timestamp >= %s"
+                    params.append(start_time)
+
+                # 仅统计盲盒礼物 is_blind_gift = true
+                # 成本：优先 blind_box.original_gift_price -> 回退 total_coin/total_price/price
+                # 价值：优先 blind_box.revealed_gift_price -> 回退 blind_box.gift_tip_price -> total_price/price/total_coin
+                sql = f"""
+                    SELECT 
+                        COALESCE(SUM(
+                            COALESCE(
+                                (NULLIF(blind_box->>'original_gift_price','')::numeric) * COALESCE(gift_num, 1),
+                                total_coin,
+                                total_price,
+                                (price * COALESCE(gift_num, 1)),
+                                0
+                            )
+                        ), 0) AS total_cost,
+                        COALESCE(SUM(
+                            COALESCE(
+                                (NULLIF(blind_box->>'revealed_gift_price','')::numeric) * COALESCE(gift_num, 1),
+                                (NULLIF(blind_box->>'gift_tip_price','')::numeric) * COALESCE(gift_num, 1),
+                                total_price,
+                                (price * COALESCE(gift_num, 1)),
+                                total_coin,
+                                0
+                            )
+                        ), 0) AS total_value
+                    FROM gift_records
+                    WHERE uid = %s 
+                      AND is_blind_gift = true
+                      AND room_id::text = %s
+                      {time_filter_sql}
+                """
+                cur.execute(sql, params)
+                r = cur.fetchone()
+                cost = float(r["total_cost"] or 0)
+                value = float(r["total_value"] or 0)
+                return {
+                    "cost": cost,
+                    "value": value,
+                    "pnl": value - cost
+                }
+
+            today_start = datetime.combine(date.today(), datetime.min.time())
+            week_start = today_start - timedelta(days=today_start.weekday())
+            month_start = today_start.replace(day=1)
+
+            result = {
+                "today": query_range(today_start),
+                "week": query_range(week_start),
+                "month": query_range(month_start),
+                "total": query_range(None)
+            }
+
+            cur.close()
+            pg_conn.close()
+            return jsonify(result), 200
+        except Exception as e:
+            print(f"计算盈亏失败: {str(e)}")
+            return jsonify({"message": f"计算盈亏失败: {str(e)}"}), 500
+
     # 添加图片代理接口
     @app.route("/api/proxy/image")
     def proxy_image():
@@ -949,6 +1085,48 @@ def register_routes(app):
         except Exception as e:
             print(f"代理图片错误: {str(e)}")
             return jsonify({"message": "获取图片失败"}), 500
+
+    @app.route("/api/bilibili/avatar")
+    def bilibili_avatar():
+        """
+        根据 B 站 UID 获取头像并直接返回图片内容
+        使用服务端代理以避免防盗链和跨域问题
+        用法：/api/bilibili/avatar?uid=123456
+        """
+        uid = request.args.get('uid')
+        if not uid:
+            return jsonify({"message": "缺少UID"}), 400
+
+        try:
+            # 1) 调用 B 站接口获取用户信息（包含 face 头像地址）
+            info_url = f"https://api.bilibili.com/x/space/acc/info?mid={uid}&jsonp=jsonp"
+            headers = {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+                'Referer': 'https://www.bilibili.com'
+            }
+            resp = requests.get(info_url, headers=headers, timeout=6)
+            data = resp.json() if resp.headers.get('Content-Type', '').startswith('application/json') else {}
+
+            if not data or data.get('code') not in (0, None):
+                return jsonify({"message": "获取用户信息失败"}), 502
+
+            face_url = (data.get('data') or {}).get('face')
+            if not face_url:
+                return jsonify({"message": "未找到头像"}), 404
+
+            # 2) 代理拉取头像图片并返回
+            img_resp = requests.get(face_url, headers=headers, timeout=10)
+            return Response(
+                img_resp.content,
+                mimetype=img_resp.headers.get('Content-Type', 'image/jpeg'),
+                headers={
+                    "Cache-Control": "public, max-age=86400",
+                    "Access-Control-Allow-Origin": "*"
+                }
+            )
+        except Exception as e:
+            print(f"获取B站头像错误: {str(e)}")
+            return jsonify({"message": "获取头像失败"}), 500
 
 
 # 创建应用实例

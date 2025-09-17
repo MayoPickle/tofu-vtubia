@@ -15,6 +15,7 @@ import CottonCandy from './components/CottonCandy';
 import CottonCandyAdmin from './components/CottonCandyAdmin';
 import { useDeviceDetect } from './utils/deviceDetector';
 import MobileNavGesture from './components/MobileNavGesture';
+import Profile from './components/Profile';
 
 
 const { Header, Content, Footer } = Layout;
@@ -294,6 +295,7 @@ function App() {
             <Route path="/" element={<Navigate to="/intro" />} />
             <Route path="/admin/users" element={<AdminUserList />} />
             <Route path="/lottery" element={<LotteryWheel isLoggedIn={isLoggedIn} />} />
+            <Route path="/profile" element={<Profile />} />
             
             <Route path="/observatory" element={<Observatory isLoggedIn={isLoggedIn} isAdmin={isAdmin} />} />
             
@@ -460,6 +462,7 @@ function App() {
           <Route path="/" element={<Navigate to="/intro" />} />
           <Route path="/admin/users" element={<AdminUserList />} />
           <Route path="/lottery" element={<LotteryWheel isLoggedIn={isLoggedIn} />} />
+          <Route path="/profile" element={<Profile />} />
           
           <Route path="/observatory" element={<Observatory isLoggedIn={isLoggedIn} isAdmin={isAdmin} />} />
           
