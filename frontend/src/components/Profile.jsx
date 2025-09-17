@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Card, Descriptions, Avatar, Tag, Space, Typography, Spin, Empty, message, Statistic, Row, Col, List } from 'antd';
+import { Card, Avatar, Tag, Space, Typography, Spin, Empty, message, Statistic, Row, Col, List } from 'antd';
 import { UserOutlined, IdcardOutlined, CrownOutlined } from '@ant-design/icons';
 
 const { Title, Text } = Typography;
@@ -86,6 +86,14 @@ function Profile() {
   }, [user, guards]);
 
   const fmt = (v) => ((v ?? 0) / 100).toFixed(2);
+  const guardInfo = useMemo(() => {
+    if (!matchedGuard) return null;
+    const lv = Number(matchedGuard.guard_level);
+    if (lv === 3) return { text: '舰长', color: '#FF1493' };
+    if (lv === 2) return { text: '提督', color: '#FF69B4' };
+    if (lv === 1) return { text: '总督', color: '#FFC0CB' };
+    return { text: '守护者', color: '#D9D9D9' };
+  }, [matchedGuard]);
 
   // 头像来源：统一使用舰长头像（如有），否则使用默认图标
   useEffect(() => {
@@ -137,7 +145,11 @@ function Profile() {
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                   <Title level={4} style={{ margin: 0 }}>{user.username}</Title>
                   {user.is_admin ? <Tag color="green">管理员</Tag> : null}
-                  {matchedGuard ? <Tag color="#FF1493">舰长 Lv.{matchedGuard.guard_level ?? '-'}</Tag> : <Tag>普通用户</Tag>}
+                  {matchedGuard ? (
+                    <Tag color={guardInfo?.color}>{guardInfo?.text}</Tag>
+                  ) : (
+                    <Tag>普通用户</Tag>
+                  )}
                 </div>
                 <div style={{ marginTop: 8 }}>
                   <Space direction="vertical" size={6}>
@@ -156,13 +168,10 @@ function Profile() {
               </div>
             </Space>
 
-            {/* 舰长匹配补充信息 */}
+            {/* 舰长匹配补充信息（去掉重复头像） */}
             <div style={{ marginTop: 16 }}>
               {matchedGuard ? (
-                <Space align="center" size={10}>
-                  <Avatar size={32} src={matchedGuard.face ? `/api/proxy/image?url=${encodeURIComponent(matchedGuard.face)}` : undefined} icon={<UserOutlined />} />
-                  <Text>勋章：{matchedGuard.medal_name || '无'}{matchedGuard.medal_level ? ` Lv.${matchedGuard.medal_level}` : ''}</Text>
-                </Space>
+                <Text>勋章：{matchedGuard.medal_name || '无'}{matchedGuard.medal_level ? ` Lv.${matchedGuard.medal_level}` : ''}</Text>
               ) : (
                 <Text type="secondary">未匹配到舰长信息</Text>
               )}
