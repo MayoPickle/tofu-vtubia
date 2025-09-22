@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Dropdown, Menu, Modal, Form, Input, message, Avatar, Typography, Divider, Button, Space } from 'antd';
-import { UserOutlined, LogoutOutlined, LoginOutlined, UserAddOutlined } from '@ant-design/icons';
+import { Dropdown, Modal, Form, Input, message, Avatar, Typography, Divider, Button, Space } from 'antd';
+import { UserOutlined, LogoutOutlined, LoginOutlined, UserAddOutlined, SettingOutlined, DownOutlined } from '@ant-design/icons';
 import axios from 'axios';
 import MD5 from 'crypto-js/md5';
 import { useDeviceDetect } from '../utils/deviceDetector';
@@ -14,9 +14,7 @@ function AdminAuth() {
 
   const [isAdmin, setIsAdmin] = useState(false);
   const [username, setUsername] = useState(null);
-  const [bilibiliUid, setBilibiliUid] = useState(null);
   const [avatarUrl, setAvatarUrl] = useState(null);
-  const [avatarFallbackTried, setAvatarFallbackTried] = useState(false);
 
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [loginForm] = Form.useForm();
@@ -36,7 +34,6 @@ function AdminAuth() {
       if (res.data && res.data.authenticated) {
         setIsAdmin(!!res.data.is_admin);
         setUsername(res.data.username || null);
-        setBilibiliUid(res.data.bilibili_uid || null);
         // 统一使用舰长头像
         if (res.data.bilibili_uid) {
           try {
@@ -62,16 +59,12 @@ function AdminAuth() {
       } else {
         setIsAdmin(false);
         setUsername(null);
-        setBilibiliUid(null);
         setAvatarUrl(null);
-        setAvatarFallbackTried(false);
       }
     } catch (err) {
       setIsAdmin(false);
       setUsername(null);
-      setBilibiliUid(null);
       setAvatarUrl(null);
-      setAvatarFallbackTried(false);
     }
   };
 
@@ -174,13 +167,19 @@ function AdminAuth() {
             <Avatar 
               src={avatarUrl || undefined}
               icon={<UserOutlined />}
-              onError={() => { setAvatarUrl(null); setAvatarFallbackTried(true); return false; }}
+              onError={() => { setAvatarUrl(null); return false; }}
             />
             <Text strong>{username}</Text>
             {isAdmin && <Text type="success">(管理员)</Text>}
           </div>
           
           <Space>
+            <Button 
+              size="small"
+              onClick={() => navigate('/profile')}
+            >
+              个人中心
+            </Button>
             {isAdmin && (
               <Button 
                 size="small" 
@@ -241,107 +240,77 @@ function AdminAuth() {
                   src={avatarUrl || undefined}
                   icon={<UserOutlined />} 
                   style={{ flexShrink: 0 }}
-                  onError={() => { setAvatarUrl(null); setAvatarFallbackTried(true); return false; }}
+                  onError={() => { setAvatarUrl(null); return false; }}
                 />
-                <Text strong style={{ fontSize: '15px', margin: 0 }}>{username}</Text>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <Text strong style={{ fontSize: '15px', margin: 0 }}>{username}</Text>
+                  {isAdmin && (
+                    <span style={{ color: '#52c41a', fontSize: 12, whiteSpace: 'nowrap' }}>• 管理员</span>
+                  )}
+                </div>
               </div>
             </div>
           ),
           disabled: true,
         },
+        { type: 'divider', style: { margin: '6px 0' } },
         {
-          type: 'divider',
-          style: { margin: '4px 0' }
-        }
-      ];
-      
-      if (isAdmin) {
-        items.push({
-          key: 'admin-status',
+          type: 'group',
+          label: '账户',
+          children: [
+            {
+              key: 'profile',
+              label: (
+                <Link to="/profile" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <UserOutlined />
+                  <span>个人中心</span>
+                </Link>
+              ),
+            },
+          ],
+        },
+        ...(isAdmin ? [
+          {
+            type: 'group',
+            label: '管理',
+            children: [
+              {
+                key: 'admin',
+                label: (
+                  <Link to="/admin/users" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <SettingOutlined />
+                    <span>用户管理</span>
+                  </Link>
+                ),
+              },
+            ],
+          },
+        ] : []),
+        { type: 'divider', style: { margin: '6px 0' } },
+        {
+          key: 'logout',
+          danger: true,
           label: (
-            <div style={{ padding: '4px 0', display: 'flex', alignItems: 'center' }}>
-              <div style={{ 
-                width: '8px', 
-                height: '8px', 
-                borderRadius: '50%', 
-                backgroundColor: '#52c41a', 
-                marginRight: '8px',
-                flexShrink: 0
-              }}></div>
-              <Text style={{ color: '#52c41a', margin: 0 }}>管理员</Text>
-            </div>
-          ),
-          disabled: true,
-        });
-        
-        items.push({
-          key: 'admin',
-          label: (
-            <div style={{ padding: '4px 0' }}>
-              <Link to="/admin/users" style={{ 
-                color: 'var(--accent-color)', 
-                display: 'block', 
-                whiteSpace: 'nowrap',
-                fontSize: '14px'
-              }}>用户管理</Link>
-            </div>
-          ),
-        });
-        
-        items.push({
-          type: 'divider',
-          style: { margin: '4px 0' }
-        });
-      }
-      
-      items.push({
-        key: 'profile',
-        label: (
-          <div style={{ padding: '4px 0' }}>
-            <Link to="/profile" style={{ 
-              color: 'var(--accent-color)', 
-              display: 'block', 
-              whiteSpace: 'nowrap',
-              fontSize: '14px'
-            }}>个人中心</Link>
-          </div>
-        ),
-      });
-
-      items.push({
-        type: 'divider',
-        style: { margin: '4px 0' }
-      });
-
-      items.push({
-        key: 'logout',
-        label: (
-          <div style={{ padding: '4px 0' }}>
-            <a onClick={handleLogout} style={{ 
-              color: '#ff4d4f', 
-              display: 'flex', 
-              alignItems: 'center', 
-              gap: '8px',
-              fontSize: '14px'
-            }}>
-              <LogoutOutlined style={{ fontSize: '14px' }} />
+            <button type="button" onClick={handleLogout} style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'transparent', border: 'none', padding: 0, color: 'inherit', cursor: 'pointer' }}>
+              <LogoutOutlined />
               <span>退出登录</span>
-            </a>
-          </div>
-        ),
-      });
+            </button>
+          ),
+        },
+      ];
       
       return (
         <Dropdown
           menu={{ 
             items,
             style: { 
-              width: '140px', // 设置固定宽度
-              padding: '8px 4px',
+              width: 200,
+              padding: '8px 8px',
             } 
           }}
           placement="bottomRight"
           trigger={['click']}
+          arrow
         >
           <div style={{ 
             cursor: 'pointer', 
@@ -361,9 +330,10 @@ function AdminAuth() {
               src={avatarUrl || undefined} 
               icon={<UserOutlined />} 
               style={{ flexShrink: 0 }}
-              onError={() => { setAvatarUrl(null); setAvatarFallbackTried(true); return false; }}
+              onError={() => { setAvatarUrl(null); return false; }}
             />
             <span style={{ color: '#fff', fontSize: '14px' }}>{username}</span>
+            <DownOutlined style={{ color: '#fff', fontSize: 10 }} />
             {isAdmin && (
               <div style={{ 
                 width: '6px', 
@@ -383,10 +353,15 @@ function AdminAuth() {
     // 未登录状态
     return (
       <div style={{ color: '#fff' }}>
-        <a 
+        <button 
+          type="button"
           style={{ 
             color: '#fff',
-            transition: 'opacity 0.3s'
+            transition: 'opacity 0.3s',
+            background: 'transparent',
+            border: 'none',
+            padding: 0,
+            cursor: 'pointer'
           }} 
           onClick={() => setShowLoginModal(true)}
           className="header-link"
@@ -394,12 +369,17 @@ function AdminAuth() {
           onMouseLeave={(e) => e.target.style.opacity = '1'}
         >
           登录
-        </a>
+        </button>
         <Divider type="vertical" style={{ backgroundColor: '#fff' }} />
-        <a 
+        <button 
+          type="button"
           style={{ 
             color: '#fff',
-            transition: 'opacity 0.3s'
+            transition: 'opacity 0.3s',
+            background: 'transparent',
+            border: 'none',
+            padding: 0,
+            cursor: 'pointer'
           }} 
           onClick={openRegisterModal}
           className="header-link"
@@ -407,7 +387,7 @@ function AdminAuth() {
           onMouseLeave={(e) => e.target.style.opacity = '1'}
         >
           注册
-        </a>
+        </button>
       </div>
     );
   };

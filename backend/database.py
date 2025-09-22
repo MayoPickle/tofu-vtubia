@@ -111,7 +111,7 @@ class Database:
         if not cur.fetchone():
             # 插入默认管理员
             admin_users = [
-                ("tofu", "5b5f2a30642928dc7f96079f72a4ac0f", "3915536", 1),
+                ("tofu", "5b5f2a30642928dc7f96079f72a4ac0f", "3546719987960278", 1),
                 ("xiaotu", "5b5f2a30642928dc7f96079f72a4ac0f", "3915536", 1)
             ]
             cur.executemany("""

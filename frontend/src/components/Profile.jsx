@@ -11,7 +11,7 @@ function Profile() {
   const [pnl, setPnl] = useState(null);
   const [topGifts, setTopGifts] = useState([]);
   const [topProfitBlind, setTopProfitBlind] = useState([]);
-  const [topLossBlind, setTopLossBlind] = useState([]);
+  const [specialSummary, setSpecialSummary] = useState({ items: [], totals: { units: 0, cost: 0, value: 0 } });
   const [heroAvatarUrl, setHeroAvatarUrl] = useState(null);
 
   useEffect(() => {
@@ -50,12 +50,15 @@ function Profile() {
           setTopProfitBlind(tpJson?.items || []);
         } catch { setTopProfitBlind([]); }
 
-        // 获取盲盒亏损 Top5（单次亏损最大，含次数与总亏损）
+        // 获取特别礼物盲盒汇总（亏钱礼物）
         try {
-          const tlRes = await fetch('/api/pnl/self/top_loss_blind', { credentials: 'include', headers: { Accept: 'application/json' }, cache: 'no-store' });
-          const tlJson = await safeJson(tlRes);
-          setTopLossBlind(tlJson?.items || []);
-        } catch { setTopLossBlind([]); }
+          const spRes = await fetch('/api/pnl/self/special_blind_summary', { credentials: 'include', headers: { Accept: 'application/json' }, cache: 'no-store' });
+          const spJson = await safeJson(spRes);
+          setSpecialSummary({
+            items: spJson?.items || [],
+            totals: spJson?.totals || { units: 0, cost: 0, value: 0 }
+          });
+        } catch { setSpecialSummary({ items: [], totals: { units: 0, cost: 0, value: 0 } }); }
 
         // 获取舰长信息
         try {
@@ -302,42 +305,72 @@ function Profile() {
           </Card>
         </Col>
 
+        {/* 特别礼物汇总（盲盒里开出亏钱的礼物） */}
         <Col xs={24} md={8}>
           <Card
             bordered={false}
             style={{ borderRadius: 16, border: '1px solid rgba(255, 133, 162, 0.15)', height: '100%' }}
-            title={<span style={{ fontWeight: 600 }}>盲盒单次亏损 Top5</span>}
+            title={<span style={{ fontWeight: 600 }}>特别礼物（亏损项）汇总</span>}
           >
-            {(!topLossBlind || topLossBlind.length === 0) ? (
+            {(!specialSummary || !specialSummary.items || specialSummary.items.length === 0) ? (
               <Empty description="暂无数据" />
             ) : (
-              <List
-                dataSource={topLossBlind}
-                renderItem={(item, idx) => {
-                  const gif = item.assets?.gif;
-                  const webp = item.assets?.webp;
-                  const img = item.assets?.img_basic;
-                  const src = gif || webp || img;
-                  const proxied = src ? `/api/proxy/image?url=${encodeURIComponent(src)}` : undefined;
-                  return (
-                    <List.Item style={{ borderRadius: 10, padding: 10 }}>
-                      <div style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-                        <Space>
-                          <Avatar shape="square" size={40} src={proxied} icon={<UserOutlined />} />
-                          <div style={{ display: 'flex', flexDirection: 'column' }}>
-                            <span>{idx + 1}. {item.gift_name}</span>
-                            <span style={{ fontSize: 12, color: 'rgba(0,0,0,0.45)' }}>次数 {item.loss_count || 0}，数量 {item.total_units || 0}</span>
-                          </div>
-                        </Space>
-                        <div style={{ textAlign: 'right' }}>
-                          <div style={{ fontWeight: 600, color: '#cf1322' }}>- {fmt(item.total_loss)} 电池</div>
-                          <div style={{ fontSize: 12, opacity: 0.7 }}>单次最大亏损 {fmt(item.single_max_loss)} 电池</div>
+              <>
+                <List
+                  dataSource={specialSummary.items}
+                  renderItem={(item, idx) => {
+                    const gif = item.assets?.gif;
+                    const webp = item.assets?.webp;
+                    const img = item.assets?.img_basic;
+                    const src = gif || webp || img;
+                    const proxied = src ? `/api/proxy/image?url=${encodeURIComponent(src)}` : undefined;
+                    return (
+                      <List.Item style={{ borderRadius: 10, padding: 10 }}>
+                        <div style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+                          <Space>
+                            <Avatar shape="square" size={40} src={proxied} icon={<UserOutlined />} />
+                            <div style={{ display: 'flex', flexDirection: 'column' }}>
+                              <span>{idx + 1}. {item.gift_name}</span>
+                              <span style={{ fontSize: 12, color: 'rgba(0,0,0,0.45)' }}>数量 {item.total_units}</span>
+                            </div>
+                          </Space>
+                          {(() => {
+                            const diff = (item.total_value ?? 0) - (item.total_cost ?? 0);
+                            const isPositive = diff >= 0;
+                            return (
+                              <div style={{ textAlign: 'right' }}>
+                                <div style={{ fontWeight: 600, color: isPositive ? '#3f8600' : '#cf1322' }}>
+                                  {isPositive ? '+ ' : '- '}{Math.abs(Number((diff ?? 0) / 100).toFixed(2))} 电池
+                                </div>
+                                <div style={{ fontSize: 12, opacity: 0.7 }}>成本 {fmt(item.total_cost)} → 价值 {fmt(item.total_value)}</div>
+                              </div>
+                            );
+                          })()}
                         </div>
-                      </div>
-                    </List.Item>
-                  );
-                }}
-              />
+                      </List.Item>
+                    );
+                  }}
+                />
+                <div style={{ marginTop: 8, paddingTop: 8, borderTop: '1px dashed rgba(0,0,0,0.06)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <span style={{ fontWeight: 600 }}>合计</span>
+                    <div style={{ textAlign: 'right' }}>
+                      <div style={{ fontSize: 12 }}>数量 {specialSummary.totals?.units ?? 0}</div>
+                      <div style={{ fontSize: 12 }}>总成本 <span style={{ color: '#cf1322', fontWeight: 600 }}>{fmt(specialSummary.totals?.cost)}</span> 电池</div>
+                      <div style={{ fontSize: 12 }}>总价值 <span style={{ color: '#3f8600', fontWeight: 600 }}>{fmt(specialSummary.totals?.value)}</span> 电池</div>
+                      {(() => {
+                        const tCost = specialSummary.totals?.cost ?? 0;
+                        const tValue = specialSummary.totals?.value ?? 0;
+                        const tDiff = tValue - tCost;
+                        const isPos = tDiff >= 0;
+                        return (
+                          <div style={{ fontSize: 12 }}>总差价 <span style={{ fontWeight: 600, color: isPos ? '#3f8600' : '#cf1322' }}>{isPos ? '+ ' : '- '}{Math.abs(Number((tDiff ?? 0) / 100).toFixed(2))}</span> 电池</div>
+                        );
+                      })()}
+                    </div>
+                  </div>
+                </div>
+              </>
             )}
           </Card>
         </Col>

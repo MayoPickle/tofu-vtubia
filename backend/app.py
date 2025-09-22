@@ -1091,18 +1091,23 @@ def register_routes(app):
                     SELECT 
                       gift_id,
                       gift_name,
+                      -- 单价（不乘 gift_num）
                       COALESCE(
                         CASE 
                           WHEN is_blind_gift THEN 
-                            COALESCE((NULLIF((blind_box::jsonb)->>'revealed_gift_price','')::numeric) * COALESCE(gift_num,1),
-                                     (NULLIF((blind_box::jsonb)->>'gift_tip_price','')::numeric) * COALESCE(gift_num,1),
-                                     total_price,
-                                     (price * COALESCE(gift_num,1)),
-                                     0)
+                            COALESCE(
+                              NULLIF((blind_box::jsonb)->>'revealed_gift_price','')::numeric,
+                              NULLIF((blind_box::jsonb)->>'gift_tip_price','')::numeric,
+                              price
+                            )
                           ELSE 
-                            COALESCE(total_price, (price * COALESCE(gift_num,1)), 0)
+                            COALESCE(
+                              price,
+                              NULLIF(total_price,0) / NULLIF(gift_num,1),
+                              total_price
+                            )
                         END, 0
-                      ) AS single_value,
+                      ) AS single_unit_value,
                       gift_assets,
                       timestamp
                     FROM gift_records
@@ -1112,7 +1117,7 @@ def register_routes(app):
                 SELECT 
                   gift_id,
                   gift_name,
-                  MAX(single_value) AS max_value,
+                  MAX(single_unit_value) AS max_value,
                   MAX(NULLIF((gift_assets::jsonb)->>'gif','')) AS asset_gif,
                   MAX(NULLIF((gift_assets::jsonb)->>'webp','')) AS asset_webp,
                   MAX(NULLIF((gift_assets::jsonb)->>'img_basic','')) AS asset_img,
@@ -1254,25 +1259,30 @@ def register_routes(app):
             print(f"获取盲盒差价Top失败: {str(e)}")
             return jsonify({"message": f"获取盲盒差价Top失败: {str(e)}"}), 500
 
-    @app.route("/api/pnl/self/top_loss_blind", methods=["GET"])
-    def get_self_top_loss_blind():
+    @app.route("/api/pnl/self/special_blind_summary", methods=["GET"])
+    def get_self_special_blind_summary():
         """
-        盲盒“单次负收益(亏损)最大”的礼物 Top5（仅本房间），并返回该礼物的亏损次数、总数量与总亏损。
-        返回：gift_id, gift_name, single_max_loss, loss_count, total_units, total_loss, assets。
-        单位：分。
+        统计指定“盲盒亏损项”礼物的汇总数据（仅本房间）：
+        - gift_ids 固定为 [32125, 32698, 32694, 32126]
+        - 仅统计 is_blind_gift = true 的记录
+        - 维度：按揭示礼物(revealed_gift_id)聚合
+        返回：{ items: [{ gift_id, gift_name, total_units, total_cost, total_value }], totals: { units, cost, value } }
+        单位：分（前端做换算显示电池）。
         """
         if "username" not in session:
             return jsonify({"message": "请先登录"}), 401
 
+        # 查询用户的 bilibili_uid
         conn_sqlite = get_connection()
         cur_sqlite = conn_sqlite.cursor()
         cur_sqlite.execute("SELECT bilibili_uid FROM users WHERE username = ?", (session["username"],))
         row = cur_sqlite.fetchone()
         conn_sqlite.close()
         if not row or not row["bilibili_uid"]:
-            return jsonify({"items": []}), 200
+            return jsonify({"items": [], "totals": {"units": 0, "cost": 0, "value": 0}}), 200
 
         uid = str(row["bilibili_uid"]).strip()
+        special_ids = [32125, 32698, 32694, 32126]
 
         try:
             config = get_config()
@@ -1285,72 +1295,89 @@ def register_routes(app):
             )
             cur = pg_conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
 
-            sql = """
+            placeholders = ",".join(["%s"] * len(special_ids))
+            sql = f"""
                 WITH rec AS (
-                    SELECT 
-                      COALESCE(NULLIF((blind_box::jsonb)->>'revealed_gift_id','')::bigint, gift_id) AS revealed_id,
-                      COALESCE(NULLIF((blind_box::jsonb)->>'revealed_gift_name',''), gift_name) AS revealed_name,
-                      COALESCE(
-                        (NULLIF((blind_box::jsonb)->>'revealed_gift_price','')::numeric) * COALESCE(gift_num,1),
-                        (NULLIF((blind_box::jsonb)->>'gift_tip_price','')::numeric) * COALESCE(gift_num,1),
-                        total_price,
-                        (price * COALESCE(gift_num,1)),
-                        total_coin,
-                        0
-                      ) AS revealed_value,
-                      COALESCE(
-                        (NULLIF((blind_box::jsonb)->>'original_gift_price','')::numeric) * COALESCE(gift_num,1),
-                        total_coin,
-                        total_price,
-                        (price * COALESCE(gift_num,1)),
-                        0
-                      ) AS original_cost,
-                      COALESCE(gift_num,1) AS units,
-                      gift_assets
-                    FROM gift_records
-                    WHERE uid = %s
-                      AND room_id::text = %s
-                      AND is_blind_gift = true
+                  SELECT 
+                    NULLIF((blind_box::jsonb)->>'revealed_gift_id','')::bigint AS revealed_id,
+                    COALESCE(NULLIF((blind_box::jsonb)->>'revealed_gift_name',''), gift_name) AS revealed_name,
+                    COALESCE(gift_num,1) AS units,
+                    COALESCE(
+                      (NULLIF((blind_box::jsonb)->>'original_gift_price','')::numeric) * COALESCE(gift_num,1),
+                      total_coin,
+                      total_price,
+                      (price * COALESCE(gift_num,1)),
+                      0
+                    ) AS original_cost,
+                    COALESCE(
+                      (NULLIF((blind_box::jsonb)->>'revealed_gift_price','')::numeric) * COALESCE(gift_num,1),
+                      (NULLIF((blind_box::jsonb)->>'gift_tip_price','')::numeric) * COALESCE(gift_num,1),
+                      total_price,
+                      (price * COALESCE(gift_num,1)),
+                      total_coin,
+                      0
+                    ) AS revealed_value,
+                    gift_assets
+                  FROM gift_records
+                  WHERE uid = %s
+                    AND room_id::text = %s
+                    AND is_blind_gift = true
+                    AND NULLIF((blind_box::jsonb)->>'revealed_gift_id','')::bigint IN ({placeholders})
                 )
                 SELECT 
                   revealed_id AS gift_id,
                   revealed_name AS gift_name,
-                  (0 - MIN((revealed_value - original_cost)) FILTER (WHERE (revealed_value - original_cost) < 0)) AS single_max_loss_abs,
-                  COUNT(*) FILTER (WHERE (revealed_value - original_cost) < 0) AS loss_count,
-                  SUM(units) FILTER (WHERE (revealed_value - original_cost) < 0) AS total_units_loss,
-                  SUM(CASE WHEN (revealed_value - original_cost) < 0 THEN (original_cost - revealed_value) ELSE 0 END) AS total_loss_abs,
+                  COALESCE(SUM(units), 0) AS total_units,
+                  COALESCE(SUM(original_cost), 0) AS total_cost,
+                  COALESCE(SUM(revealed_value), 0) AS total_value,
                   MAX(NULLIF((gift_assets::jsonb)->>'gif','')) AS asset_gif,
                   MAX(NULLIF((gift_assets::jsonb)->>'webp','')) AS asset_webp,
                   MAX(NULLIF((gift_assets::jsonb)->>'img_basic','')) AS asset_img
                 FROM rec
                 GROUP BY revealed_id, revealed_name
-                HAVING COUNT(*) FILTER (WHERE (revealed_value - original_cost) < 0) > 0
-                ORDER BY single_max_loss_abs DESC
-                LIMIT 5
+                ORDER BY total_units DESC
             """
-            cur.execute(sql, [uid, str(1883353860)])
+
+            params = [uid, str(1883353860)] + special_ids
+            cur.execute(sql, params)
             rows = cur.fetchall()
             items = []
+            totals_units = 0
+            totals_cost = 0.0
+            totals_value = 0.0
             for r in rows:
+                units = int(r["total_units"] or 0)
+                cost = float(r["total_cost"] or 0)
+                value = float(r["total_value"] or 0)
+                totals_units += units
+                totals_cost += cost
+                totals_value += value
                 items.append({
-                    "gift_id": r["gift_id"],
+                    "gift_id": int(r["gift_id"]) if r["gift_id"] is not None else None,
                     "gift_name": r["gift_name"],
-                    "single_max_loss": float(r["single_max_loss_abs"] or 0),
-                    "loss_count": int(r["loss_count"] or 0),
-                    "total_units": int(r["total_units_loss"] or 0),
-                    "total_loss": float(r["total_loss_abs"] or 0),
+                    "total_units": units,
+                    "total_cost": cost,
+                    "total_value": value,
                     "assets": {
                         "gif": r["asset_gif"],
                         "webp": r["asset_webp"],
                         "img_basic": r["asset_img"],
                     }
                 })
+
             cur.close()
             pg_conn.close()
-            return jsonify({"items": items}), 200
+            return jsonify({
+                "items": items,
+                "totals": {
+                    "units": totals_units,
+                    "cost": totals_cost,
+                    "value": totals_value
+                }
+            }), 200
         except Exception as e:
-            print(f"获取盲盒亏损Top失败: {str(e)}")
-            return jsonify({"message": f"获取盲盒亏损Top失败: {str(e)}"}), 500
+            print(f"获取特别礼物汇总失败: {str(e)}")
+            return jsonify({"message": f"获取特别礼物汇总失败: {str(e)}"}), 500
 
     # 添加图片代理接口
     @app.route("/api/proxy/image")
