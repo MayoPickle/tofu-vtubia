@@ -6,6 +6,7 @@ from config import get_config
 import psycopg2
 import psycopg2.extras
 from datetime import datetime
+import re
 import requests
 from datetime import date, datetime, timedelta
 
@@ -78,23 +79,14 @@ def register_routes(app):
         获取当前登录用户的所有奖品数据
         如果未登录则返回 401
         """
-        if "username" not in session:
+        if "user_id" not in session:
             return jsonify({"message": "请先登录"}), 401
         
-        username = session["username"]
-
-        # 查询对应用户ID
-        conn = get_connection()
-        cur = conn.cursor()
-        cur.execute("SELECT id FROM users WHERE username = ?", (username,))
-        user_row = cur.fetchone()
-        if not user_row:
-            conn.close()
-            return jsonify({"message": "用户不存在"}), 404
-        
-        user_id = user_row["id"]
+        user_id = session["user_id"]
 
         # 查询该用户在 prizes 表中的奖品
+        conn = get_connection()
+        cur = conn.cursor()
         cur.execute("""
             SELECT id, name, probability, image
             FROM prizes
@@ -122,23 +114,16 @@ def register_routes(app):
         - 数据格式: { prizes: [{ name, probability, image }] }
         - 清空该用户之前所有奖品并插入新的
         """
-        if "username" not in session:
+        if "user_id" not in session:
             return jsonify({"message": "请先登录"}), 401
         
-        username = session["username"]
         data = request.get_json() or {}
         prizes = data.get("prizes", [])
         
-        # 先查询用户ID
+        # 使用会话中的用户ID
         conn = get_connection()
         cur = conn.cursor()
-        cur.execute("SELECT id FROM users WHERE username = ?", (username,))
-        user_row = cur.fetchone()
-        if not user_row:
-            conn.close()
-            return jsonify({"message": "用户不存在"}), 404
-        
-        user_id = user_row["id"]
+        user_id = session["user_id"]
         
         # 清空该用户现有奖品
         cur.execute("DELETE FROM prizes WHERE user_id = ?", (user_id,))
@@ -167,36 +152,39 @@ def register_routes(app):
     def login():
         """
         通过数据库验证用户
-        前端提交 { username, password }
-        - 如果匹配, session["is_admin"], session["username"] 写入
+        前端提交 { uid, password }
+        - 如果匹配, 写入 session: user_id, uid, username, is_admin
         - 否则401
         """
         data = request.get_json() or {}
-        username = data.get("username") or ""
-        username = username.strip()
+        uid = (data.get("uid") or data.get("bilibili_uid") or "").strip()
+        # 仅保留数字，防止传入诸如 "UID:123" 导致类型错误
+        uid = re.sub(r"\D", "", uid)
         password = data.get("password") or ""
         password = password.strip()
 
-        if not username or not password:
-            return jsonify({"message": "用户名和密码不能为空"}), 400
+        if not uid or not password:
+            return jsonify({"message": "UID和密码不能为空"}), 400
 
         conn = get_connection()
         cur = conn.cursor()
-        cur.execute("SELECT id, password, is_admin FROM users WHERE username = ?", (username,))
+        cur.execute("SELECT id, username, password, is_admin, bilibili_uid FROM users WHERE bilibili_uid = ?", (uid,))
         row = cur.fetchone()
         conn.close()
 
         if not row or row["password"] != password:
-            return jsonify({"message": "用户名或密码错误"}), 401
+            return jsonify({"message": "UID或密码错误"}), 401
         
         # 登录成功，设置 session
-        session["username"] = username
         session["user_id"] = row["id"]
+        session["uid"] = row["bilibili_uid"]
+        session["username"] = row["username"]  # 仅用于显示
         session["is_admin"] = row["is_admin"]
         
         return jsonify({
             "message": "登录成功",
-            "username": username,
+            "username": row["username"],
+            "uid": row["bilibili_uid"],
             "is_admin": row["is_admin"]
         }), 200
 
@@ -210,40 +198,81 @@ def register_routes(app):
     def register():
         """
         注册新用户
-        前端提交 { username, password, password_confirm }
+        前端提交 { uid, password, password_confirm, username? }
         - 成功：自动登录并返回用户信息
         - 失败：返回错误信息
         """
         data = request.get_json() or {}
-        username = data.get("username") or ""
-        username = username.strip()
+        uid = (data.get("uid") or data.get("bilibili_uid") or "").strip()
+        uid = re.sub(r"\D", "", uid)
+        username = (data.get("username") or "").strip()  # 可选，用于展示
         password = data.get("password") or ""
         password = password.strip()
         password_confirm = data.get("password_confirm") or ""
         password_confirm = password_confirm.strip()
-        bilibili_uid = data.get("bilibili_uid") or ""
-        bilibili_uid = bilibili_uid.strip()
+        agree = bool(data.get("agree"))
 
         # 基本验证
-        if not username or not password:
-            return jsonify({"message": "用户名和密码不能为空"}), 400
+        if not uid or not password:
+            return jsonify({"message": "UID和密码不能为空"}), 400
+        if not agree:
+            return jsonify({"message": "请先阅读并同意用户协议与隐私政策"}), 400
         
         if password != password_confirm:
             return jsonify({"message": "两次输入的密码不一致"}), 400
 
-        # 查询用户名是否已存在
+        # 查询 UID 是否已存在
         conn = get_connection()
         cur = conn.cursor()
-        cur.execute("SELECT id FROM users WHERE username = ?", (username,))
+        cur.execute("SELECT id FROM users WHERE bilibili_uid = ?", (uid,))
         if cur.fetchone():
             conn.close()
-            return jsonify({"message": f"用户名 {username} 已被使用"}), 400
+            return jsonify({"message": f"UID {uid} 已被注册"}), 400
+
+        # 验证近2分钟是否在指定房间投喂包含“灯牌”的礼物
+        try:
+            config = get_config()
+            pg_conn = psycopg2.connect(
+                host=config.POSTGRES_HOST,
+                port=config.POSTGRES_PORT,
+                database=config.POSTGRES_DB,
+                user=config.POSTGRES_USER,
+                password=config.POSTGRES_PASSWORD
+            )
+            cur_pg = pg_conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+
+            two_minutes_ago = datetime.utcnow() - timedelta(minutes=2)
+            # 匹配 gift_name 或揭示后的名称包含“灯牌”
+            sql = """
+                SELECT 1
+                FROM gift_records
+                WHERE uid = %s
+                  AND room_id::text = %s
+                  AND timestamp >= %s
+                  AND (
+                        gift_name ILIKE %s OR
+                        NULLIF((blind_box::jsonb)->>'revealed_gift_name','') ILIKE %s
+                  )
+                LIMIT 1
+            """
+            room_id = str(1883353860)
+            like_term = '%灯牌%'
+            cur_pg.execute(sql, [str(uid), room_id, two_minutes_ago, like_term, like_term])
+            found = cur_pg.fetchone() is not None
+            cur_pg.close()
+            pg_conn.close()
+            if not found:
+                return jsonify({"message": "未检测到近2分钟内的“灯牌”礼物，请投喂后再试"}), 400
+        except Exception as e:
+            return jsonify({"message": f"验证礼物失败：{str(e)}"}), 500
         
         # 插入新用户
+        # 若未提供展示用用户名，则默认使用 UID
+        display_name = username if username else str(uid)
         cur.execute("""
             INSERT INTO users (username, password, bilibili_uid, is_admin)
             VALUES (?, ?, ?, ?)
-        """, (username, password, bilibili_uid, 0))
+        """, (display_name, password, uid, 0))
         conn.commit()
         
         # 获取新用户ID
@@ -251,27 +280,152 @@ def register_routes(app):
         conn.close()
         
         # 设置session，自动登录
-        session["username"] = username
         session["user_id"] = user_id
+        session["uid"] = uid
+        session["username"] = display_name
         session["is_admin"] = 0
         
         return jsonify({
             "message": "注册成功",
-            "username": username,
+            "username": display_name,
+            "uid": uid,
             "is_admin": 0
         }), 201
+
+    @app.route("/api/register/verify_gift", methods=["POST"])
+    def verify_gift_for_register():
+        """
+        校验指定 UID 是否在最近2分钟内于指定房间投喂过名称包含“灯牌”的礼物。
+        前端提交 { uid }
+        返回 { verified: true/false }
+        """
+        data = request.get_json() or {}
+        uid = (data.get("uid") or data.get("bilibili_uid") or "").strip()
+        uid = re.sub(r"\D", "", uid)
+        if not uid:
+            return jsonify({"message": "缺少UID"}), 400
+
+        try:
+            config = get_config()
+            pg_conn = psycopg2.connect(
+                host=config.POSTGRES_HOST,
+                port=config.POSTGRES_PORT,
+                database=config.POSTGRES_DB,
+                user=config.POSTGRES_USER,
+                password=config.POSTGRES_PASSWORD
+            )
+            cur_pg = pg_conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+
+            two_minutes_ago = datetime.utcnow() - timedelta(minutes=2)
+            sql = """
+                SELECT 1
+                FROM gift_records
+                WHERE uid = %s
+                  AND room_id::text = %s
+                  AND timestamp >= %s
+                  AND (
+                        gift_name ILIKE %s OR
+                        NULLIF((blind_box::jsonb)->>'revealed_gift_name','') ILIKE %s
+                  )
+                LIMIT 1
+            """
+            room_id = str(1883353860)
+            like_term = '%灯牌%'
+            cur_pg.execute(sql, [str(uid), room_id, two_minutes_ago, like_term, like_term])
+            found = cur_pg.fetchone() is not None
+            cur_pg.close()
+            pg_conn.close()
+            return jsonify({"verified": bool(found)}), 200
+        except Exception as e:
+            return jsonify({"message": f"验证礼物失败：{str(e)}"}), 500
+
+    @app.route("/api/forgot_password/reset", methods=["POST"])
+    def reset_password_with_gift():
+        """
+        忘记密码：通过 UID + 近2分钟“灯牌”礼物验证来重置密码，并自动登录。
+        前端提交 { uid, password }
+        返回 200 并写入会话。
+        """
+        data = request.get_json() or {}
+        uid = (data.get("uid") or data.get("bilibili_uid") or "").strip()
+        uid = re.sub(r"\D", "", uid)
+        password = (data.get("password") or "").strip()
+        if not uid or not password:
+            return jsonify({"message": "UID和新密码不能为空"}), 400
+
+        # 先验证近2分钟内是否有“灯牌”礼物
+        try:
+            config = get_config()
+            pg_conn = psycopg2.connect(
+                host=config.POSTGRES_HOST,
+                port=config.POSTGRES_PORT,
+                database=config.POSTGRES_DB,
+                user=config.POSTGRES_USER,
+                password=config.POSTGRES_PASSWORD
+            )
+            cur_pg = pg_conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+
+            two_minutes_ago = datetime.utcnow() - timedelta(minutes=2)
+            sql = """
+                SELECT 1
+                FROM gift_records
+                WHERE uid = %s
+                  AND room_id::text = %s
+                  AND timestamp >= %s
+                  AND (
+                        gift_name ILIKE %s OR
+                        NULLIF((blind_box::jsonb)->>'revealed_gift_name','') ILIKE %s
+                  )
+                LIMIT 1
+            """
+            room_id = str(1883353860)
+            like_term = '%灯牌%'
+            cur_pg.execute(sql, [str(uid), room_id, two_minutes_ago, like_term, like_term])
+            found = cur_pg.fetchone() is not None
+            cur_pg.close()
+            pg_conn.close()
+            if not found:
+                return jsonify({"message": "未检测到近2分钟内的“灯牌”礼物，无法重置密码"}), 400
+        except Exception as e:
+            return jsonify({"message": f"验证礼物失败：{str(e)}"}), 500
+
+        # 更新本地 sqlite 密码并自动登录
+        conn = get_connection()
+        cur = conn.cursor()
+        cur.execute("SELECT id, username, is_admin FROM users WHERE bilibili_uid = ?", (uid,))
+        row = cur.fetchone()
+        if not row:
+            conn.close()
+            return jsonify({"message": "用户不存在"}), 404
+
+        cur.execute("UPDATE users SET password = ? WHERE id = ?", (password, row["id"]))
+        conn.commit()
+        conn.close()
+
+        session["user_id"] = row["id"]
+        session["uid"] = uid
+        session["username"] = row["username"]
+        session["is_admin"] = row["is_admin"]
+
+        return jsonify({
+            "message": "重置密码成功",
+            "username": row["username"],
+            "uid": uid,
+            "is_admin": row["is_admin"]
+        }), 200
 
     @app.route("/api/check_auth", methods=["GET"])
     def check_auth():
         """
         检查用户是否已登录，前端可用于验证会话有效性
         """
-        if "username" not in session:
+        if "user_id" not in session:
             return jsonify({"authenticated": False}), 200
         
         return jsonify({
             "authenticated": True,
-            "username": session["username"],
+            "username": session.get("username"),
+            "uid": session.get("uid"),
             "is_admin": session.get("is_admin", 0)
         }), 200
 
@@ -282,18 +436,18 @@ def register_routes(app):
         返回字段：authenticated, id, username, bilibili_uid, is_admin
         未登录时返回 { authenticated: False }
         """
-        if "username" not in session:
+        if "user_id" not in session:
             return jsonify({"authenticated": False}), 200
 
-        username = session.get("username")
+        user_id = session.get("user_id")
 
         conn = get_connection()
         cur = conn.cursor()
         cur.execute("""
             SELECT id, username, bilibili_uid, is_admin
             FROM users
-            WHERE username = ?
-        """, (username,))
+            WHERE id = ?
+        """, (user_id,))
         row = cur.fetchone()
         conn.close()
 
@@ -964,13 +1118,13 @@ def register_routes(app):
         返回：{ today: {cost, value, pnl}, week: {...}, month: {...}, total: {...} }
         """
         # 会话校验
-        if "username" not in session:
+        if "user_id" not in session:
             return jsonify({"message": "请先登录"}), 401
 
         # 查询用户的 bilibili_uid（在 sqlite 用户表）
         conn_sqlite = get_connection()
         cur_sqlite = conn_sqlite.cursor()
-        cur_sqlite.execute("SELECT bilibili_uid FROM users WHERE username = ?", (session["username"],))
+        cur_sqlite.execute("SELECT bilibili_uid FROM users WHERE id = ?", (session["user_id"],))
         row = cur_sqlite.fetchone()
         conn_sqlite.close()
         if not row or not row["bilibili_uid"]:
@@ -1062,12 +1216,12 @@ def register_routes(app):
         返回：[{ gift_id, gift_name, max_value, assets:{gif,webp,img_basic}, last_timestamp }]
         单位：分（前端换算为电池）。
         """
-        if "username" not in session:
+        if "user_id" not in session:
             return jsonify({"message": "请先登录"}), 401
 
         conn_sqlite = get_connection()
         cur_sqlite = conn_sqlite.cursor()
-        cur_sqlite.execute("SELECT bilibili_uid FROM users WHERE username = ?", (session["username"],))
+        cur_sqlite.execute("SELECT bilibili_uid FROM users WHERE id = ?", (session["user_id"],))
         row = cur_sqlite.fetchone()
         conn_sqlite.close()
         if not row or not row["bilibili_uid"]:
@@ -1156,12 +1310,12 @@ def register_routes(app):
         返回字段：original_gift_name, revealed_gift_name, original_cost, revealed_value, profit, assets, timestamp。
         单位：分。
         """
-        if "username" not in session:
+        if "user_id" not in session:
             return jsonify({"message": "请先登录"}), 401
 
         conn_sqlite = get_connection()
         cur_sqlite = conn_sqlite.cursor()
-        cur_sqlite.execute("SELECT bilibili_uid FROM users WHERE username = ?", (session["username"],))
+        cur_sqlite.execute("SELECT bilibili_uid FROM users WHERE id = ?", (session["user_id"],))
         row = cur_sqlite.fetchone()
         conn_sqlite.close()
         if not row or not row["bilibili_uid"]:
@@ -1275,7 +1429,7 @@ def register_routes(app):
         # 查询用户的 bilibili_uid
         conn_sqlite = get_connection()
         cur_sqlite = conn_sqlite.cursor()
-        cur_sqlite.execute("SELECT bilibili_uid FROM users WHERE username = ?", (session["username"],))
+        cur_sqlite.execute("SELECT bilibili_uid FROM users WHERE id = ?", (session["user_id"],))
         row = cur_sqlite.fetchone()
         conn_sqlite.close()
         if not row or not row["bilibili_uid"]:

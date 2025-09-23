@@ -16,6 +16,8 @@ import CottonCandyAdmin from './components/CottonCandyAdmin';
 import { useDeviceDetect } from './utils/deviceDetector';
 import MobileNavGesture from './components/MobileNavGesture';
 import Profile from './components/Profile';
+import Terms from './components/Legal/Terms';
+import Privacy from './components/Legal/Privacy';
 
 
 const { Header, Content, Footer } = Layout;
@@ -308,6 +310,8 @@ function App() {
               element={isAdmin ? <CottonCandyAdmin isAdmin={isAdmin} /> : <Navigate to="/cotton-candy" />} 
             />
             
+            <Route path="/terms" element={<Terms />} />
+            <Route path="/privacy" element={<Privacy />} />
             <Route path="*" element={<Navigate to="/" />} />
           </Routes>
 
@@ -475,6 +479,8 @@ function App() {
             element={isAdmin ? <CottonCandyAdmin isAdmin={isAdmin} /> : <Navigate to="/cotton-candy" />} 
           />
           
+          <Route path="/terms" element={<Terms />} />
+          <Route path="/privacy" element={<Privacy />} />
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>
       </Content>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Dropdown, Modal, Form, Input, message, Avatar, Typography, Divider, Button, Space } from 'antd';
 import { UserOutlined, LogoutOutlined, LoginOutlined, UserAddOutlined, SettingOutlined, DownOutlined } from '@ant-design/icons';
@@ -22,6 +22,165 @@ function AdminAuth() {
   // 注册表单
   const [showRegisterModal, setShowRegisterModal] = useState(false);
   const [registerForm] = Form.useForm();
+  // 忘记密码表单
+  const [showForgotModal, setShowForgotModal] = useState(false);
+  const [forgotForm] = Form.useForm();
+
+  // 注册礼物验证弹窗与轮询
+  const [showVerifyModal, setShowVerifyModal] = useState(false);
+  const [verifySecondsLeft, setVerifySecondsLeft] = useState(120);
+  const [verifyPolling, setVerifyPolling] = useState(false);
+  const [verifyVerified, setVerifyVerified] = useState(false);
+  const [verifyError, setVerifyError] = useState(null);
+  const verifyIntervalRef = useRef(null);
+  const countdownIntervalRef = useRef(null);
+  const pendingRegisterRef = useRef(null); // { action: 'register'|'reset', uid, displayName?, hashedPassword }
+
+  const clearVerifyTimers = useCallback(() => {
+    if (verifyIntervalRef.current) {
+      clearInterval(verifyIntervalRef.current);
+      verifyIntervalRef.current = null;
+    }
+    if (countdownIntervalRef.current) {
+      clearInterval(countdownIntervalRef.current);
+      countdownIntervalRef.current = null;
+    }
+  }, []);
+
+  const closeVerifyModal = useCallback(() => {
+    clearVerifyTimers();
+    setShowVerifyModal(false);
+    setVerifyPolling(false);
+    setVerifyVerified(false);
+    setVerifyError(null);
+    setVerifySecondsLeft(120);
+    pendingRegisterRef.current = null;
+  }, [clearVerifyTimers]);
+
+  const pollVerifyOnce = useCallback(async (uid) => {
+    try {
+      const resp = await axios.post('/api/register/verify_gift', { uid });
+      if (resp.data && resp.data.verified) {
+        setVerifyVerified(true);
+        return true;
+      }
+      return false;
+    } catch (e) {
+      setVerifyError(e.response?.data?.message || '验证请求失败');
+      return false;
+    }
+  }, []);
+
+  const startVerifyFlow = useCallback(async (uid) => {
+    setShowVerifyModal(true);
+    setVerifyPolling(true);
+    setVerifyVerified(false);
+    setVerifyError(null);
+    setVerifySecondsLeft(120);
+
+    // 先立即尝试一次
+    const first = await pollVerifyOnce(uid);
+    if (first) {
+      if (pendingRegisterRef.current) {
+        const { action, uid: pUid, displayName, hashedPassword } = pendingRegisterRef.current;
+        try {
+          if (action === 'reset') {
+            const res = await axios.post('/api/forgot_password/reset', {
+              uid: pUid,
+              password: hashedPassword
+            });
+            if (res.status === 200) {
+              message.success('重置成功，已自动登录');
+              setIsAdmin(!!res.data?.is_admin);
+              setUsername(res.data?.username || '用户');
+              closeVerifyModal();
+              try { await checkAuth(); } catch {}
+            }
+          } else {
+            const res = await axios.post('/api/register', {
+              uid: pUid,
+              username: displayName || undefined,
+              password: hashedPassword,
+              password_confirm: hashedPassword,
+              agree: true
+            });
+            if (res.status === 201) {
+              message.success('注册成功，已自动登录');
+              setIsAdmin(!!res.data?.is_admin);
+              setUsername(res.data?.username || '用户');
+              setShowRegisterModal(false);
+              closeVerifyModal();
+              try { await checkAuth(); } catch {}
+            }
+          }
+        } catch (err) {
+          message.error(err.response?.data?.message || (action === 'reset' ? '重置失败' : '注册失败'));
+          closeVerifyModal();
+        }
+      } else {
+        closeVerifyModal();
+      }
+      return;
+    }
+
+    // 每3秒轮询一次
+    verifyIntervalRef.current = setInterval(async () => {
+      const ok = await pollVerifyOnce(uid);
+      if (ok) {
+        if (pendingRegisterRef.current) {
+          const { action, uid: pUid, displayName, hashedPassword } = pendingRegisterRef.current;
+          try {
+            if (action === 'reset') {
+              const res = await axios.post('/api/forgot_password/reset', {
+                uid: pUid,
+                password: hashedPassword
+              });
+              if (res.status === 200) {
+                message.success('重置成功，已自动登录');
+                setIsAdmin(!!res.data?.is_admin);
+                setUsername(res.data?.username || '用户');
+                closeVerifyModal();
+                try { await checkAuth(); } catch {}
+              }
+            } else {
+              const res = await axios.post('/api/register', {
+                uid: pUid,
+                username: displayName || undefined,
+                password: hashedPassword,
+                password_confirm: hashedPassword,
+                agree: true
+              });
+              if (res.status === 201) {
+                message.success('注册成功，已自动登录');
+                setIsAdmin(!!res.data?.is_admin);
+                setUsername(res.data?.username || '用户');
+                setShowRegisterModal(false);
+                closeVerifyModal();
+                try { await checkAuth(); } catch {}
+              }
+            }
+          } catch (err) {
+            message.error(err.response?.data?.message || (action === 'reset' ? '重置失败' : '注册失败'));
+            closeVerifyModal();
+          }
+        } else {
+          closeVerifyModal();
+        }
+      }
+    }, 3000);
+
+    // 倒计时
+    countdownIntervalRef.current = setInterval(() => {
+      setVerifySecondsLeft(prev => {
+        if (prev <= 1) {
+          clearVerifyTimers();
+          setVerifyPolling(false);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  }, [pollVerifyOnce, closeVerifyModal, clearVerifyTimers]);
 
   useEffect(() => {
     checkAuth();
@@ -72,11 +231,10 @@ function AdminAuth() {
   const handleLoginSubmit = async () => {
     try {
       const values = await loginForm.validateFields();
-      const hashedPassword = MD5(values.password).toString(); // 对密码进行 MD5 加密
+      const hashedPassword = MD5(values.password).toString();
   
-      // 发送加密后的密码
       const res = await axios.post('/api/login', {
-        username: values.username,
+        uid: values.uid,
         password: hashedPassword
       });
   
@@ -86,16 +244,13 @@ function AdminAuth() {
         setUsername(res.data.username || '用户');
         setShowLoginModal(false);
         
-        // 获取当前路径
         const currentPath = window.location.pathname;
         
-        // 如果当前在棉花糖页面，根据管理员状态重定向
         if (currentPath === '/cotton-candy' && res.data.is_admin) {
           window.location.href = '/admin/cotton-candy';
         } else if (currentPath === '/admin/cotton-candy' && !res.data.is_admin) {
           window.location.href = '/cotton-candy';
         } else {
-          // 其他页面只需刷新即可
           window.location.reload();
         }
       }
@@ -138,20 +293,15 @@ function AdminAuth() {
   const handleRegister = async () => {
     try {
       const values = await registerForm.validateFields();
-      const hashedPassword = MD5(values.password).toString(); // 对密码进行 MD5 加密
-  
-      // 提交到 /api/register
-      const res = await axios.post('/api/register', {
-        username: values.username,
-        password: hashedPassword,
-        password_confirm: hashedPassword,
-        bilibili_uid: values.bilibili_uid || null
-      });
-  
-      if (res.status === 201) {
-        message.success('注册成功，请登录');
-        setShowRegisterModal(false);
-      }
+      const hashedPassword = MD5(values.password).toString();
+
+      // 暂存注册参数，开启验证弹窗与轮询
+      pendingRegisterRef.current = {
+        uid: values.uid,
+        displayName: values.display_name || undefined,
+        hashedPassword
+      };
+      await startVerifyFlow(values.uid);
     } catch (err) {
       message.error(err.response?.data?.message || '注册失败');
     }
@@ -412,11 +562,21 @@ function AdminAuth() {
           layout="vertical"
         >
           <Form.Item
-            name="username"
-            label="用户名"
-            rules={[{ required: true, message: '请输入用户名' }]}
+            name="uid"
+            label="UID"
+            rules={[{ required: true, message: '请输入B站UID' }]}
           >
-            <Input prefix={<UserOutlined />} placeholder="请输入用户名" />
+            <Input 
+              prefix={<UserOutlined />} 
+              placeholder="请输入B站UID"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              allowClear
+              onChange={(e) => {
+                const v = (e.target.value || '').replace(/\D/g, '');
+                loginForm.setFieldsValue({ uid: v });
+              }}
+            />
           </Form.Item>
 
           <Form.Item
@@ -426,6 +586,19 @@ function AdminAuth() {
           >
             <Input.Password placeholder="请输入密码" />
           </Form.Item>
+          <div style={{ textAlign: 'right', marginTop: 4 }}>
+            <button
+              type="button"
+              onClick={() => {
+                setShowLoginModal(false);
+                forgotForm.resetFields();
+                setShowForgotModal(true);
+              }}
+              style={{ background: 'transparent', border: 'none', padding: 0, color: '#FF85A2', cursor: 'pointer' }}
+            >
+              忘记密码？
+            </button>
+          </div>
         </Form>
       </Modal>
 
@@ -439,20 +612,47 @@ function AdminAuth() {
         cancelText="取消"
         maskClosable={false}
       >
-        <Typography.Text type="secondary" style={{ display: 'block', marginBottom: 16 }}>
-          您的密码将使用哈希加密存储，维护者也无法查看密码。
-        </Typography.Text>
+
         <Form form={registerForm} layout="vertical">
           <Form.Item
-            name="username"
-            label="用户名"
-            rules={[
-              { required: true, message: '请输入用户名' },
-              { min: 3, message: '用户名至少3个字符' },
-              { max: 20, message: '用户名最多20个字符' },
-            ]}
+            name="agree"
+            valuePropName="checked"
+            rules={[{
+              validator: (_, value) => value ? Promise.resolve() : Promise.reject(new Error('请先阅读并同意用户协议与隐私政策'))
+            }]}
           >
-            <Input placeholder="请输入用户名" />
+            <div style={{ fontSize: 13, color: 'rgba(0,0,0,0.7)' }}>
+              <label style={{ cursor: 'pointer' }}>
+                <input type="checkbox" style={{ marginRight: 6 }} />
+                我已阅读并同意
+                <a href="/terms" target="_blank" rel="noreferrer" style={{ margin: '0 4px' }}>《用户协议》</a>
+                和
+                <a href="/privacy" target="_blank" rel="noreferrer" style={{ margin: '0 4px' }}>《隐私政策》</a>
+              </label>
+            </div>
+          </Form.Item>
+          <Form.Item
+            name="uid"
+            label="B站UID"
+            rules={[{ required: true, message: '请输入B站UID' }]}
+          >
+            <Input 
+              placeholder="请输入你的B站UID" 
+              inputMode="numeric"
+              pattern="[0-9]*"
+              allowClear
+              onChange={(e) => {
+                const v = (e.target.value || '').replace(/\D/g, '');
+                registerForm.setFieldsValue({ uid: v });
+              }}
+            />
+          </Form.Item>
+
+          <Form.Item
+            name="display_name"
+            label="展示昵称（选填）"
+          >
+            <Input placeholder="用于展示的昵称，可不填，默认使用UID" />
           </Form.Item>
 
           <Form.Item
@@ -484,12 +684,88 @@ function AdminAuth() {
           >
             <Input.Password placeholder="请再次输入密码" />
           </Form.Item>
-          
-          <Form.Item
-            name="bilibili_uid"
-            label="B站UID（选填）"
-          >
-            <Input placeholder="请输入你的B站UID" />
+        </Form>
+      </Modal>
+
+      {/* 注册验证弹窗 */}
+      <Modal
+        title="验证账号归属权 ✨"
+        open={showVerifyModal}
+        onCancel={closeVerifyModal}
+        footer={null}
+        maskClosable={false}
+      >
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <Text>请在 2 分钟内到直播间投喂一份带「灯牌」的礼物呀～✨ 帮我确认这是你的账号哦！</Text>
+          <a href={`https://live.bilibili.com/1883353860`} target="_blank" rel="noreferrer" style={{ fontSize: 14 }}>
+            去直播间 ➜
+          </a>
+          <Text type={verifyVerified ? 'success' : verifySecondsLeft === 0 ? 'danger' : 'secondary'} style={{ fontSize: 20, fontWeight: 700 }}>
+            小闹钟：{verifySecondsLeft}s ⏳
+          </Text>
+          {verifyError && <Text type="danger">{verifyError}</Text>}
+          {verifyVerified ? (
+            <Text type="success">捕捉到你的「灯牌」啦！正在为你完成登记喔～ ✅</Text>
+          ) : verifySecondsLeft === 0 ? (
+            <Text type="danger">还没等到「灯牌」…可以稍作休息后再试一次呢～</Text>
+          ) : (
+            <Text>我会每 3 秒偷偷看一眼，有礼物就第一时间告诉你～(ง •̀_•́)ง</Text>
+          )}
+          {/* 按钮去除，保持自动轮询与倒计时 */}
+        </div>
+      </Modal>
+
+      {/* 忘记密码弹窗 */}
+      <Modal
+        title="忘记密码"
+        open={showForgotModal}
+        onCancel={() => setShowForgotModal(false)}
+        onOk={async () => {
+          try {
+            const values = await forgotForm.validateFields();
+            const hashedPassword = MD5(values.password).toString();
+            // 开启验证流程
+            pendingRegisterRef.current = {
+              action: 'reset',
+              uid: values.uid,
+              hashedPassword
+            };
+            setShowForgotModal(false);
+            await startVerifyFlow(values.uid);
+          } catch (e) {}
+        }}
+        okText="开始验证"
+        cancelText="取消"
+        maskClosable={false}
+      >
+        <Typography.Text type="secondary" style={{ display: 'block', marginBottom: 16 }}>
+          请输入你的 UID 与新密码。随后将提示你在2分钟内投喂「灯牌」完成验证。
+        </Typography.Text>
+        <Form form={forgotForm} layout="vertical">
+          <Form.Item name="uid" label="B站UID" rules={[{ required: true, message: '请输入B站UID' }]}>
+            <Input 
+              placeholder="请输入你的B站UID" 
+              inputMode="numeric"
+              pattern="[0-9]*"
+              allowClear
+              onChange={(e) => {
+                const v = (e.target.value || '').replace(/\D/g, '');
+                forgotForm.setFieldsValue({ uid: v });
+              }}
+            />
+          </Form.Item>
+          <Form.Item name="password" label="新密码" rules={[{ required: true, message: '请输入新密码' }, { min: 6, message: '密码至少6个字符' }]}>
+            <Input.Password placeholder="请输入新的登录密码" />
+          </Form.Item>
+          <Form.Item name="confirm" label="确认新密码" dependencies={["password"]} rules={[{ required: true, message: '请确认新密码' }, ({ getFieldValue }) => ({
+            validator(_, value) {
+              if (!value || getFieldValue('password') === value) {
+                return Promise.resolve();
+              }
+              return Promise.reject(new Error('两次输入的密码不一致'));
+            },
+          })]}>
+            <Input.Password placeholder="请再次输入新密码" />
           </Form.Item>
         </Form>
       </Modal>

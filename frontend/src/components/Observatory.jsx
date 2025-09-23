@@ -354,6 +354,59 @@ function Observatory({ isLoggedIn, isAdmin }) {
             </Col>
           );
         })}
+
+        {/* 机器人豆豆使用说明：放在密码卡片下面 */}
+        <Col span={24}>
+          <Card
+            bordered={false}
+            style={{
+              marginTop: isMobile ? 4 : 8,
+              background: 'linear-gradient(180deg, rgba(255, 245, 250, 0.95), rgba(255, 240, 245, 0.85))',
+              borderRadius: 12,
+              boxShadow: '0 4px 12px rgba(220, 110, 170, 0.08)',
+              border: '1px solid rgba(255, 192, 203, 0.2)'
+            }}
+            styles={{
+              header: {
+                padding: isMobile ? '8px 12px' : '12px 16px',
+                fontWeight: 'bold',
+                background: 'linear-gradient(135deg, #FF69B4, #FFB6C1)',
+                color: '#fff',
+                textShadow: '0 1px 2px rgba(0,0,0,0.15)'
+              },
+              body: {
+                padding: isMobile ? 12 : 16
+              }
+            }}
+            title={
+              <span>
+                机器人豆豆使用说明
+              </span>
+            }
+          >
+            <Paragraph style={{ marginBottom: isMobile ? 8 : 10, color: '#555' }}>
+              <Text strong style={{ color: '#FF1493' }}>触发关键词：</Text> 豆豆
+            </Paragraph>
+            <Divider style={{ margin: isMobile ? '8px 0' : '12px 0', borderColor: 'rgba(255, 192, 203, 0.3)' }} />
+            <Paragraph style={{ marginBottom: isMobile ? 6 : 8, color: '#666' }}>
+              <Text strong style={{ color: '#FF69B4' }}>模式控制</Text>
+            </Paragraph>
+            <ul style={{ paddingLeft: isMobile ? 18 : 20, marginTop: 0, marginBottom: isMobile ? 8 : 12, color: '#555', fontSize: isMobile ? 12 : 14 }}>
+              <li>关闭欢迎模式：弹幕发送「记仇机器人关闭欢迎模式」</li>
+              <li>开启欢迎模式：弹幕发送「记仇机器人开启欢迎模式」</li>
+            </ul>
+            <Paragraph style={{ marginBottom: isMobile ? 6 : 8, color: '#666' }}>
+              <Text strong style={{ color: '#FF69B4' }}>自动 PK 投票</Text>
+            </Paragraph>
+            <ul style={{ paddingLeft: isMobile ? 18 : 20, marginTop: 0, marginBottom: isMobile ? 8 : 12, color: '#555', fontSize: isMobile ? 12 : 14 }}>
+              <li>打 1 票：弹幕发送「记仇机器人挽尊299792」</li>
+              <li>打 10 票：弹幕发送「记仇机器人有效299792」</li>
+            </ul>
+            <Paragraph style={{ marginBottom: 0, color: '#555' }}>
+              <Text strong style={{ color: '#FF69B4' }}>点赞</Text>：触发豆豆后弹幕中包含”点赞“会触发点赞
+            </Paragraph>
+          </Card>
+        </Col>
       </Row>
       
       {/* 添加上次更新时间提示 */}

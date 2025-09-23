@@ -46,6 +46,36 @@ class Database:
                 is_admin INTEGER DEFAULT 0
             )
         """)
+        # 在创建唯一索引前进行数据清理：
+        # 1) 将空字符串的 UID 归一化为 NULL，避免因 "" 被视为有效值而触发唯一冲突
+        cur.execute("""
+            UPDATE users
+            SET bilibili_uid = NULL
+            WHERE bilibili_uid IS NOT NULL AND TRIM(bilibili_uid) = ''
+        """)
+        # 2) 处理重复的非空 UID：保留最小 id 的一条，其余置为 NULL
+        cur.execute("""
+            SELECT bilibili_uid
+            FROM users
+            WHERE bilibili_uid IS NOT NULL
+            GROUP BY bilibili_uid
+            HAVING COUNT(*) > 1
+        """)
+        dups = [row[0] for row in cur.fetchall()]
+        for uid in dups:
+            cur.execute("SELECT id FROM users WHERE bilibili_uid = ? ORDER BY id ASC", (uid,))
+            ids = [r[0] for r in cur.fetchall()]
+            # 保留第一条，其余置空
+            for duplicate_id in ids[1:]:
+                cur.execute("UPDATE users SET bilibili_uid = NULL WHERE id = ?", (duplicate_id,))
+
+        # 为 bilibili_uid 建立唯一索引（如不存在）。
+        # 说明：SQLite 对 NULL 值在唯一索引中不判定为冲突，因此允许现有空值存在；
+        # 新注册时在应用层强制必填即可实现“必填+唯一”的语义。
+        cur.execute("""
+            CREATE UNIQUE INDEX IF NOT EXISTS idx_users_bilibili_uid_unique
+            ON users (bilibili_uid)
+        """)
         conn.commit()
         conn.close()
     
