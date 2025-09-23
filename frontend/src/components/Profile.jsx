@@ -13,6 +13,7 @@ function Profile() {
   const [topProfitBlind, setTopProfitBlind] = useState([]);
   const [specialSummary, setSpecialSummary] = useState({ items: [], totals: { units: 0, cost: 0, value: 0 } });
   const [heroAvatarUrl, setHeroAvatarUrl] = useState(null);
+  const [points, setPoints] = useState(null);
 
   useEffect(() => {
     const load = async () => {
@@ -42,6 +43,13 @@ function Profile() {
           setTopGifts(tgJson?.items || []);
         } catch { setTopGifts([]); }
         setUser(me);
+
+        // 获取积分（自9月17日起，日消费>=1000电池记1分）
+        try {
+          const ptsRes = await fetch('/api/points/self', { credentials: 'include', headers: { Accept: 'application/json' }, cache: 'no-store' });
+          const ptsJson = await safeJson(ptsRes);
+          setPoints(Number(ptsJson?.points ?? 0));
+        } catch { setPoints(0); }
 
         // 获取盲盒差价 Top5（单次差价最大）
         try {
@@ -163,13 +171,18 @@ function Profile() {
                     <Space direction="vertical" size={6}>
                       <Space>
                         <IdcardOutlined style={{ opacity: 0.7 }} />
-                        <Text type="secondary">站内UID</Text>
+                        <Text type="secondary">站内ID</Text>
                         <Text strong>{user.id}</Text>
                       </Space>
                       <Space>
                         <CrownOutlined style={{ opacity: 0.7 }} />
                         <Text type="secondary">B站UID</Text>
                         <Text strong>{user.bilibili_uid || '未绑定'}</Text>
+                      </Space>
+                      <Space>
+                        <IdcardOutlined style={{ opacity: 0.7 }} />
+                        <Text type="secondary">积分</Text>
+                        <Text strong>{points ?? 0}</Text>
                       </Space>
                     </Space>
                   </div>

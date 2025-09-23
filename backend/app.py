@@ -1533,6 +1533,100 @@ def register_routes(app):
             print(f"获取特别礼物汇总失败: {str(e)}")
             return jsonify({"message": f"获取特别礼物汇总失败: {str(e)}"}), 500
 
+    @app.route("/api/points/self", methods=["GET"])
+    def get_self_points():
+        """
+        计算当前登录用户在指定直播间自 2025-09-16 起的“积分”。
+        规则：1 电池 = 1 积分（以总消费累计）。单位换算：数据库金额以“分”（电池*100），因此积分 = floor(总消费分/100)。
+        返回：{ points: number, start_date: 'YYYY-MM-DD', days: [{ date: 'YYYY-MM-DD', cost: number }] }
+        说明：仅按 room_id=1883353860 且当前登录用户的 uid 统计；包含所有礼物类型（不限制 is_blind_gift）。
+        """
+        if "user_id" not in session:
+            return jsonify({"message": "请先登录"}), 401
+
+        # 获取用户 bilibili_uid
+        conn_sqlite = get_connection()
+        cur_sqlite = conn_sqlite.cursor()
+        cur_sqlite.execute("SELECT bilibili_uid FROM users WHERE id = ?", (session["user_id"],))
+        row = cur_sqlite.fetchone()
+        conn_sqlite.close()
+        if not row or not row["bilibili_uid"]:
+            return jsonify({"points": 0, "start_date": "2025-09-16", "days": []}), 200
+
+        uid = str(row["bilibili_uid"]).strip()
+
+        # 允许通过查询参数覆盖开始日期（可选）
+        start_date_str = request.args.get("start_date")
+        try:
+            if start_date_str:
+                start_date_dt = datetime.strptime(start_date_str, "%Y-%m-%d").date()
+            else:
+                start_date_dt = date(2025, 9, 16)
+        except Exception:
+            start_date_dt = date(2025, 9, 16)
+
+        try:
+            config = get_config()
+            pg_conn = psycopg2.connect(
+                host=config.POSTGRES_HOST,
+                port=config.POSTGRES_PORT,
+                database=config.POSTGRES_DB,
+                user=config.POSTGRES_USER,
+                password=config.POSTGRES_PASSWORD
+            )
+            cur = pg_conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+
+            # 采用东八区自然日统计：将 UTC 时间 +8 小时再取 date
+            sql = """
+                WITH rec AS (
+                  SELECT 
+                    (timestamp AT TIME ZONE 'UTC' + INTERVAL '8 hours')::date AS day_cn,
+                    COALESCE(
+                      (NULLIF((blind_box::jsonb)->>'original_gift_price','')::numeric) * COALESCE(gift_num,1),
+                      total_coin,
+                      total_price,
+                      (price * COALESCE(gift_num,1)),
+                      0
+                    ) AS cost
+                  FROM gift_records
+                  WHERE uid = %s
+                    AND room_id::text = %s
+                    AND timestamp >= %s
+                )
+                SELECT day_cn AS day, COALESCE(SUM(cost), 0) AS total_cost
+                FROM rec
+                GROUP BY day_cn
+                ORDER BY day_cn ASC
+            """
+
+            # Postgres 端时间边界按 UTC 存储，起始以 00:00:00 +08:00 对应的 UTC 时间传入，近似以 >= 边界过滤
+            # 这里直接以本地日期的 00:00:00（naive）用于 >=，兼容现存存储（若为 UTC，会略微扩大范围但后续分日聚合不影响阈值判断）。
+            start_dt = datetime.combine(start_date_dt, datetime.min.time())
+            cur.execute(sql, [uid, str(1883353860), start_dt])
+            rows = cur.fetchall()
+
+            days = []
+            points = 0
+            threshold = 1000 * 100  # 1000 电池（金额以分计）
+            for r in rows:
+                day_str = r["day"].isoformat() if r["day"] else None
+                total_cost = float(r["total_cost"] or 0)
+                days.append({"date": day_str, "cost": total_cost})
+                if total_cost >= threshold:
+                    points += 1
+
+            cur.close()
+            pg_conn.close()
+
+            return jsonify({
+                "points": points,
+                "start_date": start_date_dt.isoformat(),
+                "days": days
+            }), 200
+        except Exception as e:
+            print(f"计算积分失败: {str(e)}")
+            return jsonify({"message": f"计算积分失败: {str(e)}"}), 500
+
     # 添加图片代理接口
     @app.route("/api/proxy/image")
     def proxy_image():
