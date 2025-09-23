@@ -122,8 +122,8 @@ function Profile() {
   }
 
   return (
-    <div style={{ width: '100%' }}>
-      <Row gutter={[16, 16]}>
+  <div style={{ width: '100%' }}>
+      <Row gutter={[16, 16]} style={{ alignItems: 'stretch' }}>
         {/* 左列：个人信息卡 */}
         <Col xs={24} md={8}>
           <Card
@@ -132,7 +132,8 @@ function Profile() {
               background: 'linear-gradient(135deg, #FFE4EC 0%, #FFD1E0 100%)',
               border: '1px solid rgba(255, 133, 162, 0.25)',
               borderRadius: 16,
-              boxShadow: '0 8px 24px rgba(255, 133, 162, 0.25)'
+              boxShadow: '0 8px 24px rgba(255, 133, 162, 0.25)',
+              height: '100%'
             }}
             bodyStyle={{ padding: 20 }}
           >
@@ -186,7 +187,7 @@ function Profile() {
         <Col xs={24} md={16}>
           <Card
             bordered={false}
-            style={{ borderRadius: 16, border: '1px solid rgba(255, 133, 162, 0.15)', boxShadow: '0 6px 18px rgba(0,0,0,0.06)' }}
+            style={{ borderRadius: 16, border: '1px solid rgba(255, 133, 162, 0.15)', boxShadow: '0 6px 18px rgba(0,0,0,0.06)', height: '100%' }}
             bodyStyle={{ padding: 16 }}
             title={<span style={{ fontWeight: 600 }}>盈亏概览（盲盒，单位：电池）</span>}
           >
