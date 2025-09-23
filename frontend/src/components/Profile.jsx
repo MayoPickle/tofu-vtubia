@@ -129,7 +129,10 @@ function Profile() {
           <Card
             bordered={false}
             style={{
-              background: 'linear-gradient(135deg, #FFE4EC 0%, #FFD1E0 100%)',
+              backgroundImage: 'linear-gradient(135deg, rgba(255,228,236,0.88) 0%, rgba(255,209,224,0.34) 100%), url(/head1.png)',
+              backgroundRepeat: 'no-repeat, no-repeat',
+              backgroundPosition: 'left top, right 12px center',
+              backgroundSize: 'auto, 140px',
               border: '1px solid rgba(255, 133, 162, 0.25)',
               borderRadius: 16,
               boxShadow: '0 8px 24px rgba(255, 133, 162, 0.25)',
@@ -137,40 +140,42 @@ function Profile() {
             }}
             bodyStyle={{ padding: 20 }}
           >
-            <Space align="start" size={16}>
-              <Avatar
-                size={64}
-                src={heroAvatarUrl || undefined}
-                icon={<UserOutlined />}
-                style={{ boxShadow: '0 6px 16px rgba(0,0,0,0.1)' }}
-                onError={() => { setHeroAvatarUrl(null); return false; }}
-              />
-              <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                  <Title level={4} style={{ margin: 0 }}>{user.username}</Title>
-                  {user.is_admin ? <Tag color="green">管理员</Tag> : null}
-                  {matchedGuard ? (
-                    <Tag color={guardInfo?.color}>{guardInfo?.text}</Tag>
-                  ) : (
-                    <Tag>普通用户</Tag>
-                  )}
-                </div>
-                <div style={{ marginTop: 8 }}>
-                  <Space direction="vertical" size={6}>
-                    <Space>
-                      <IdcardOutlined style={{ opacity: 0.7 }} />
-                      <Text type="secondary">站内UID</Text>
-                      <Text strong>{user.id}</Text>
+            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'flex-start', gap: 12 }}>
+              <Space align="start" size={16}>
+                <Avatar
+                  size={64}
+                  src={heroAvatarUrl || undefined}
+                  icon={<UserOutlined />}
+                  style={{ boxShadow: '0 6px 16px rgba(0,0,0,0.1)' }}
+                  onError={() => { setHeroAvatarUrl(null); return false; }}
+                />
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                    <Title level={4} style={{ margin: 0 }}>{user.username}</Title>
+                    {user.is_admin ? <Tag color="green">管理员</Tag> : null}
+                    {matchedGuard ? (
+                      <Tag color={guardInfo?.color}>{guardInfo?.text}</Tag>
+                    ) : (
+                      <Tag>普通用户</Tag>
+                    )}
+                  </div>
+                  <div style={{ marginTop: 8 }}>
+                    <Space direction="vertical" size={6}>
+                      <Space>
+                        <IdcardOutlined style={{ opacity: 0.7 }} />
+                        <Text type="secondary">站内UID</Text>
+                        <Text strong>{user.id}</Text>
+                      </Space>
+                      <Space>
+                        <CrownOutlined style={{ opacity: 0.7 }} />
+                        <Text type="secondary">B站UID</Text>
+                        <Text strong>{user.bilibili_uid || '未绑定'}</Text>
+                      </Space>
                     </Space>
-                    <Space>
-                      <CrownOutlined style={{ opacity: 0.7 }} />
-                      <Text type="secondary">B站UID</Text>
-                      <Text strong>{user.bilibili_uid || '未绑定'}</Text>
-                    </Space>
-                  </Space>
+                  </div>
                 </div>
-              </div>
-            </Space>
+              </Space>
+            </div>
 
             {/* 舰长匹配补充信息（去掉重复头像） */}
             <div style={{ marginTop: 16 }}>
