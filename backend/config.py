@@ -1,6 +1,7 @@
 # config.py
 import os
 from dotenv import load_dotenv
+from datetime import timedelta
 
 # 加载.env文件
 load_dotenv()
@@ -10,6 +11,7 @@ class Config:
     SECRET_KEY = os.getenv("SECRET_KEY", "your-secret-key-here")
     UPLOAD_FOLDER = 'uploads'  # 文件上传目录
     DB_PATH = os.getenv("DB_PATH", 'songs.db')
+    PERMANENT_SESSION_LIFETIME = timedelta(days=180)
     
     # PostgreSQL数据库配置
     POSTGRES_HOST = os.getenv("POSTGRES_HOST")

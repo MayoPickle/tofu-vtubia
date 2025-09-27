@@ -176,6 +176,7 @@ def register_routes(app):
             return jsonify({"message": "UID或密码错误"}), 401
         
         # 登录成功，设置 session
+        session.permanent = True
         session["user_id"] = row["id"]
         session["uid"] = row["bilibili_uid"]
         session["username"] = row["username"]  # 仅用于显示
@@ -280,6 +281,7 @@ def register_routes(app):
         conn.close()
         
         # 设置session，自动登录
+        session.permanent = True
         session["user_id"] = user_id
         session["uid"] = uid
         session["username"] = display_name
@@ -402,6 +404,7 @@ def register_routes(app):
         conn.commit()
         conn.close()
 
+        session.permanent = True
         session["user_id"] = row["id"]
         session["uid"] = uid
         session["username"] = row["username"]
